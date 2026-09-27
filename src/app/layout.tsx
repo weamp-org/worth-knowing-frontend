@@ -30,9 +30,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Next.js Template",
+  title: "Worth Knowing",
   description:
-    "A Next.js template with Clerk auth, Tailwind v4, shadcn/ui, and dark mode.",
+    "Worth Knowing — Next.js frontend with Clerk auth, Tailwind v4, and shadcn/ui.",
 };
 
 export default function RootLayout({
@@ -71,12 +71,6 @@ export default function RootLayout({
                     >
                       Home
                     </Link>
-                    <Link
-                      href="/users"
-                      className="text-sm font-medium hover:underline"
-                    >
-                      Users
-                    </Link>
                   </nav>
                   <ThemeToggle />
                   <Show when="signed-out">
@@ -89,7 +83,7 @@ export default function RootLayout({
                 </header>
                 <main className="flex-1">{children}</main>
                 <footer className="p-4 text-center text-sm text-muted-foreground">
-                  &copy; {new Date().getFullYear()} Next.js Template
+                  &copy; {new Date().getFullYear()} Worth Knowing
                 </footer>
                 <Toaster />
               </AuthTokenSetter>

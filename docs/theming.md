@@ -1,6 +1,6 @@
 # Theming
 
-The template supports light, dark, and system-preference themes via [next-themes](https://github.com/pacocoursey/next-themes).
+Worth Knowing supports light, dark, and system-preference themes via [next-themes](https://github.com/pacocoursey/next-themes).
 
 ## How it works
 
@@ -43,7 +43,7 @@ The Sun icon shows in light mode, the Moon in dark mode, using Tailwind's `dark:
 
 ## CSS variables
 
-The template uses shadcn/ui's CSS variable system defined in `src/app/globals.css`:
+Worth Knowing uses shadcn/ui's CSS variable system defined in `src/app/globals.css`:
 
 ```css
 @theme inline {

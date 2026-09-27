@@ -1,6 +1,6 @@
-# Next.js Template
+# Worth Knowing Frontend
 
-A production-ready [Next.js 16](https://nextjs.org) template with [Clerk](https://clerk.com) authentication, [Tailwind CSS v4](https://tailwindcss.com), [shadcn/ui](https://ui.shadcn.com), and dark mode.
+Next.js 16 frontend for Worth Knowing, with [Clerk](https://clerk.com) authentication, [Tailwind CSS v4](https://tailwindcss.com), [shadcn/ui](https://ui.shadcn.com), and dark mode.
 
 ## Features
 
@@ -46,9 +46,7 @@ src/
 │   ├── page.tsx             # Home page (auth-aware greeting)
 │   ├── loading.tsx          # Loading spinner (page transitions)
 │   ├── error.tsx            # Error boundary
-│   ├── not-found.tsx        # 404 page
-│   └── users/
-│       └── page.tsx         # Users listing via useUsers() hook
+│   └── not-found.tsx        # 404 page
 ├── components/
 │   ├── ui/
 │   │   ├── button.tsx       # shadcn/ui Button
@@ -61,12 +59,9 @@ src/
 │   ├── query-provider.tsx   # TanStack Query provider (staleTime: 30s)
 │   ├── theme-provider.tsx   # next-themes provider wrapper
 │   └── theme-toggle.tsx     # Light/dark toggle button
-├── hooks/
-│   └── use-users.ts         # useUsers() / useUser() hooks
 ├── lib/
 │   ├── api.ts               # Axios instance + auth interceptor
 │   ├── auth-token-setter.tsx # Clerk JWT → Axios interceptor
-│   ├── users.ts             # Typed user API functions
 │   └── utils.ts             # cn() helper (clsx + tailwind-merge)
 └── proxy.ts                 # Clerk middleware (Next.js 16 name)
 ```

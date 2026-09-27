@@ -1,6 +1,6 @@
 # Authentication
 
-[Clerk](https://clerk.com) handles sign-in, sign-up, session management, and user profiles. The template uses `@clerk/nextjs`.
+[Clerk](https://clerk.com) handles sign-in, sign-up, session management, and user profiles. Worth Knowing uses `@clerk/nextjs`.
 
 ## Setup
 
@@ -115,9 +115,10 @@ export function Profile() {
 
 ## API auth (NestJS backend)
 
-The template includes an Axios client (`src/lib/api.ts`) pre-configured for the NestJS backend.
-An `AuthTokenSetter` component runs inside `<ClerkProvider>` and automatically injects the
-Clerk session JWT as a `Bearer` token on every outgoing request:
+Worth Knowing includes an Axios client (`src/lib/api.ts`) pre-configured for the NestJS backend.
+An `AuthTokenSetter` component runs inside `<ClerkProvider>` and registers a request interceptor
+that adds the Clerk session JWT as a `Bearer` token when `getToken()` returns a token. If
+`getToken()` returns `null` or rejects, the request proceeds without an `Authorization` header:
 
 ```tsx
 // src/lib/auth-token-setter.tsx
@@ -125,7 +126,11 @@ export function AuthTokenSetter({ children }) {
   const { getToken } = useAuth();
 
   useEffect(() => {
-    getToken().then((token) => setAuthToken(token ?? null));
+    setupAuthInterceptor(getToken);
+
+    return () => {
+      teardownAuthInterceptor();
+    };
   }, [getToken]);
 
   return <>{children}</>;
@@ -137,5 +142,5 @@ This satisfies the backend's `ClerkAuthGuard` and auto-provisions the user on fi
 ### Environment variable
 
 ```env
-NEXT_PUBLIC_API_URL=http://localhost:3000/api/v1
+NEXT_PUBLIC_BACKEND_BASE_URL=http://localhost:3000/api/v1
 ```
