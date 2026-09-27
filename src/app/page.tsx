@@ -5,7 +5,7 @@ export default async function Home() {
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-8 p-8">
-      <h1 className="text-4xl font-bold tracking-tight">Next.js Template</h1>
+      <h1 className="text-4xl font-bold tracking-tight">Worth Knowing</h1>
       {user ? (
         <p className="text-lg text-muted-foreground">
           Welcome back,{" "}
