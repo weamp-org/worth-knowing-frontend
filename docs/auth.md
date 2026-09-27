@@ -117,7 +117,8 @@ export function Profile() {
 
 Worth Knowing includes an Axios client (`src/lib/api.ts`) pre-configured for the NestJS backend.
 An `AuthTokenSetter` component runs inside `<ClerkProvider>` and registers a request interceptor
-that injects the Clerk session JWT as a `Bearer` token on every outgoing request:
+that adds the Clerk session JWT as a `Bearer` token when `getToken()` returns a token. If
+`getToken()` returns `null` or rejects, the request proceeds without an `Authorization` header:
 
 ```tsx
 // src/lib/auth-token-setter.tsx
