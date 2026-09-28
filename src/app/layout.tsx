@@ -1,18 +1,11 @@
-import {
-  ClerkProvider,
-  Show,
-  SignInButton,
-  SignUpButton,
-  UserButton,
-} from "@clerk/nextjs";
+import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Instrument_Serif, Inter } from "next/font/google";
-import Link from "next/link";
 
 import { QueryProvider } from "@/components/query-provider";
+import { SiteFooter } from "@/components/site-footer";
+import { SiteHeader } from "@/components/site-header";
 import { ThemeProvider } from "@/components/theme-provider";
-import { ThemeToggle } from "@/components/theme-toggle";
-import { Button } from "@/components/ui/button";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthTokenSetter } from "@/lib/auth-token-setter";
 import { cn } from "@/lib/utils";
@@ -39,7 +32,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Worth Knowing",
   description:
-    "Worth Knowing — Next.js frontend with Clerk auth, Tailwind v4, and shadcn/ui.",
+    "Discover things worth knowing, from people who found them worth knowing.",
 };
 
 export default function RootLayout({
@@ -71,31 +64,19 @@ export default function RootLayout({
           <ClerkProvider>
             <QueryProvider>
               <AuthTokenSetter>
-                <header className="flex items-center justify-end gap-4 p-4">
-                  <nav className="flex items-center gap-4 mr-auto">
-                    <Link
-                      href="/"
-                      className="text-sm font-medium hover:underline"
-                    >
-                      Home
-                    </Link>
-                  </nav>
-                  <ThemeToggle />
-                  <Show when="signed-out">
-                    <SignInButton />
-                    <SignUpButton />
-                  </Show>
-                  <Show when="signed-in">
-                    <Button asChild size="sm" variant="outline">
-                      <Link href="/share">Share something</Link>
-                    </Button>
-                    <UserButton />
-                  </Show>
-                </header>
-                <main className="flex-1">{children}</main>
-                <footer className="p-4 text-center text-sm text-muted-foreground">
-                  &copy; {new Date().getFullYear()} Worth Knowing
-                </footer>
+                {/* First tab stop on the page. With a sticky header, keyboard
+                    users would otherwise tab through the nav on every route. */}
+                <a
+                  href="#main"
+                  className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-60 focus:rounded-md focus:bg-primary focus:px-3 focus:py-2 focus:text-xs focus:font-semibold focus:text-primary-foreground"
+                >
+                  Skip to content
+                </a>
+                <SiteHeader />
+                <main id="main" className="flex-1">
+                  {children}
+                </main>
+                <SiteFooter />
                 <Toaster />
               </AuthTokenSetter>
             </QueryProvider>
