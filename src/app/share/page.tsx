@@ -1,7 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 
 import { ShareResourceForm } from "@/components/share-resource-form";
-import { getMySettings } from "@/lib/settings-api";
+import { getMySettingsForViewer } from "@/lib/settings-queries";
 
 export const dynamic = "force-dynamic";
 
@@ -10,12 +10,13 @@ export default async function SharePage() {
   // anonymous visitor never reaches the settings call below.
   await auth.protect();
 
-  // The form's initial value. A failure here should not block sharing — the
-  // backend falls back to the stored preference if the form omits the field
-  // anyway, and the worst case is a checkbox in the default position.
-  const anonymousByDefault = await getMySettings()
+  // Falls back to `null` rather than a boolean. This read is not load-bearing —
+  // the contributor picks per resource anyway — but claiming the toggle
+  // "matches your default" when the default was never read would be a lie, so
+  // `null` means the copy drops the claim rather than inventing a default.
+  const anonymousByDefault = await getMySettingsForViewer()
     .then((settings) => settings.anonymousByDefault)
-    .catch(() => false);
+    .catch(() => null);
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-10">

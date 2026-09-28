@@ -64,15 +64,18 @@ const FORM_ID = "resource-form";
  */
 export function ShareResourceForm({
   resource,
-  anonymousByDefault = false,
+  anonymousByDefault = null,
 }: {
   resource?: Resource;
   /**
    * The caller's standing preference, pre-fetched by the server component.
+   * `null` means it could not be read, in which case the toggle starts off and
+   * the copy stops claiming to match a default.
+   *
    * Only sets the initial value — flipping the toggle overrides it for this
    * resource alone.
    */
-  anonymousByDefault?: boolean;
+  anonymousByDefault?: boolean | null;
 }) {
   const router = useRouter();
   const isEditing = resource !== undefined;
@@ -100,7 +103,7 @@ export function ShareResourceForm({
           type: "OTHER",
           why: "",
           tags: [],
-          isAnonymous: anonymousByDefault,
+          isAnonymous: anonymousByDefault ?? false,
         },
   });
 

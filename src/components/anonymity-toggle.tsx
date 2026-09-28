@@ -28,7 +28,11 @@ export function AnonymityToggle({
   id,
 }: {
   control: Control<ResourceFormValues>;
-  defaultAnonymous: boolean;
+  /**
+   * `null` when the preference could not be read. The copy then makes no claim
+   * about a default rather than naming one that was never loaded.
+   */
+  defaultAnonymous: boolean | null;
   id: string;
 }) {
   const [initial, setInitial] = useState(defaultAnonymous);
@@ -38,6 +42,13 @@ export function AnonymityToggle({
   useEffect(() => {
     setInitial(defaultAnonymous);
   }, [defaultAnonymous]);
+
+  const description =
+    initial === null
+      ? "Your name is hidden from this one. You can change that."
+      : initial
+        ? "Your name is hidden from this one, matching your default. You can change that."
+        : "Your name is shown on this one, matching your default. You can change that.";
 
   return (
     <Controller
@@ -55,11 +66,7 @@ export function AnonymityToggle({
             <Label htmlFor={id} className="font-medium">
               Share anonymously
             </Label>
-            <p className="text-sm text-muted-foreground">
-              {initial
-                ? "Your name is hidden from this one, matching your default. You can change that."
-                : "Your name is shown on this one, matching your default. You can change that."}
-            </p>
+            <p className="text-sm text-muted-foreground">{description}</p>
           </div>
         </div>
       )}
