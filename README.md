@@ -6,7 +6,7 @@ Next.js 16 frontend for Worth Knowing, with [Clerk](https://clerk.com) authentic
 
 - **Authentication** — Clerk (sign-in, sign-up, user button) with middleware
 - **Dark mode** — Light/dark/system toggle via `next-themes`
-- **UI components** — shadcn/ui (radix-nova style) with Tailwind v4
+- **UI components** — shadcn/ui (radix-sera style) with Tailwind v4
 - **Code quality** — Biome (linter + formatter), Husky + lint-staged
 - **TypeScript** — Strict mode, `@/*` path alias
 - **React Compiler** — Enabled in `next.config.ts`
@@ -62,7 +62,7 @@ src/
 ├── lib/
 │   ├── api.ts               # Axios instance + auth interceptor
 │   ├── auth-token-setter.tsx # Clerk JWT → Axios interceptor
-│   └── utils.ts             # cn() helper (clsx + tailwind-merge)
+│   └── utils.ts             # cn() re-export (from the `cn` package)
 └── proxy.ts                 # Clerk middleware (Next.js 16 name)
 ```
 
