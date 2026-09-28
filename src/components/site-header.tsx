@@ -23,9 +23,16 @@ export function SiteHeader() {
         </Link>
 
         <div className="ml-auto flex items-center gap-2">
-          <ThemeToggle />
-
+          {/*
+            Signed out only. A signed-in header already carries the gear, the
+            share CTA and the avatar, and on a phone that is the difference
+            between the wordmark fitting and wrapping. Appearance is a
+            preference rather than something you come here to do, so it lives
+            in settings alongside the anonymity default once you are signed in.
+          */}
           <Show when="signed-out">
+            <ThemeToggle />
+
             {/*
               Clerk renders its own unstyled button by default, which is what
               let these wrap onto two lines on narrow screens. Passing our

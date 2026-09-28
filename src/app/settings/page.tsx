@@ -2,6 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import type { Metadata } from "next";
 
 import { AnonymitySetting } from "@/components/anonymity-setting";
+import { ThemeSetting } from "@/components/theme-setting";
 import { getMySettingsForViewer } from "@/lib/settings-queries";
 
 export const dynamic = "force-dynamic";
@@ -28,8 +29,12 @@ export default async function SettingsPage() {
         How you appear on the things you share.
       </p>
 
-      <div className="mt-8 border-t border-border pt-8">
+      <div className="mt-8 flex flex-col gap-8">
         <AnonymitySetting initialValue={anonymousByDefault} />
+
+        <div className="border-t border-border pt-8">
+          <ThemeSetting />
+        </div>
       </div>
     </div>
   );
