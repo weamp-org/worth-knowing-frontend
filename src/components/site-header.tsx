@@ -11,25 +11,55 @@ export function SiteHeader() {
     // `sticky` rather than `fixed`: it stays in flow and occupies its own
     // space, so nothing downstream needs padding to clear it.
     <header className="sticky top-0 z-50 border-b border-border bg-background">
-      <div className="mx-auto flex h-14 w-full max-w-3xl items-center gap-4 px-4">
-        {/* The wordmark is the only link to `/`. A separate "Home" nav item
-            would duplicate it. */}
+      <div className="mx-auto flex h-14 w-full max-w-3xl items-center gap-3 px-4">
+        {/* `shrink-0` and `whitespace-nowrap` stop the wordmark being squeezed
+            onto two lines when the controls beside it need the room. */}
         <Link
           href="/"
-          className="font-heading text-lg font-normal tracking-wide hover:underline"
+          className="shrink-0 whitespace-nowrap font-heading text-lg font-normal tracking-wide hover:underline"
         >
           Worth Knowing
         </Link>
 
         <div className="ml-auto flex items-center gap-2">
           <ThemeToggle />
+
           <Show when="signed-out">
-            <SignInButton />
-            <SignUpButton />
+            {/*
+              Clerk renders its own unstyled button by default, which is what
+              let these wrap onto two lines on narrow screens. Passing our
+              Button as the child gives them the header's sizing and stops the
+              wrap.
+            */}
+            <SignInButton mode="modal">
+              <Button size="sm">Sign in</Button>
+            </SignInButton>
+
+            {/* Clerk's sign-in modal already offers sign-up, so on mobile one
+                button is enough and saves the width the primary CTA needs. */}
+            <SignUpButton mode="modal">
+              <Button
+                size="sm"
+                variant="outline"
+                className="hidden sm:inline-flex"
+              >
+                Sign up
+              </Button>
+            </SignUpButton>
           </Show>
+
           <Show when="signed-in">
-            <Button asChild size="sm" variant="outline">
-              <Link href="/share">Share something</Link>
+            {/*
+              The filled button in the header. Sharing is the action the product
+              exists for, so it takes the primary treatment. Never two at once:
+              this is signed-in only, and the filled sign-in beside it is
+              signed-out only.
+            */}
+            <Button asChild size="sm">
+              <Link href="/share">
+                <span className="hidden sm:inline">Share something</span>
+                <span className="sm:hidden">Share</span>
+              </Link>
             </Button>
             <UserButton />
           </Show>
