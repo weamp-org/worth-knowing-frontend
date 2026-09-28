@@ -1,7 +1,12 @@
-import Link from "next/link";
-
 /** Outbound link to the parent project. */
 const WEAMP_URL = "https://weamp.org";
+
+/**
+ * Worth Knowing is two independently versioned repos, so one repo's GitHub
+ * contributor graph would only ever show half the people involved. The org page
+ * lists both.
+ */
+const CONTRIBUTORS_URL = "https://github.com/weamp-org";
 
 export function SiteFooter() {
   return (
@@ -19,13 +24,19 @@ export function SiteFooter() {
             className="font-heading text-base font-normal hover:text-foreground"
           >
             WeAMP
-            {/* Only the external link opens a new tab, so only it needs saying. */}
             <span className="sr-only"> (opens in new tab)</span>
           </a>{" "}
           and{" "}
-          <Link href="/contributors" className="hover:text-foreground">
+          <a
+            href={CONTRIBUTORS_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-foreground"
+          >
             open-source contributors
-          </Link>
+            {/* Both links leave the site, so both announce it. */}
+            <span className="sr-only"> (opens in new tab)</span>
+          </a>
         </p>
       </div>
     </footer>
