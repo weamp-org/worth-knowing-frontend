@@ -65,14 +65,17 @@ src/
 ├── app/
 │   ├── globals.css          # Tailwind v4 + shadcn theme tokens
 │   ├── layout.tsx           # Root layout (Clerk, ThemeProvider, header/footer)
-│   ├── page.tsx             # Resource feed (tag filter + pagination)
-│   ├── loading.tsx          # Loading spinner (page transitions)
+│   ├── (feed)/
+│   │   ├── page.tsx         # Resource feed (tag filter + pagination)
+│   │   └── loading.tsx      # Feed-only loading boundary
 │   ├── error.tsx            # Error boundary
 │   ├── not-found.tsx        # 404 page
 │   ├── share/
-│   │   └── page.tsx         # Share a resource (auth required)
+│   │   ├── page.tsx         # Share a resource (auth required)
+│   │   └── loading.tsx
 │   ├── settings/
-│   │   └── page.tsx         # Your preferences (auth required)
+│   │   ├── page.tsx         # Your preferences (auth required)
+│   │   └── loading.tsx
 │   └── resources/[id]/
 │       ├── page.tsx         # Resource detail
 │       └── edit/page.tsx    # Edit your own resource
@@ -87,7 +90,8 @@ src/
 │   ├── edit-resource-link.tsx # Ownership probe for the Edit affordance (client)
 │   ├── query-provider.tsx   # TanStack Query provider (staleTime: 30s)
 │   ├── theme-provider.tsx   # next-themes provider wrapper
-│   └── theme-toggle.tsx     # Light/dark toggle button
+│   ├── theme-toggle.tsx     # Light/dark toggle button
+│   └── page-loading.tsx     # Shared spinner for the scoped loading.tsx files
 ├── lib/
 │   ├── api.ts               # Axios instance + auth interceptor
 │   ├── auth-token-setter.tsx # Clerk JWT → Axios interceptor
