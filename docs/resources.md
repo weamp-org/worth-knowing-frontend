@@ -93,8 +93,41 @@ disables it deliberately to show off schema errors; the docs recommend against
 that in real code.
 
 `TagInput` is a plain chip input, not a typeahead. The backend has `GET /tags`
-ready for one — it is already used for the feed's filter pills — but tagging is
-not the point of a contribution, so it stays text until it needs to be more.
+ready for one — it is also what backs the feed's filter pills — and the share form
+now uses it. See below.
+
+## Tags
+
+`TagInput` is a combobox over `GET /tags?query=`, which the backend built for this
+and had left unused. As the contributor types, it debounces for 200ms and offers
+matching tags with how many resources carry each, so an existing tag gets reused
+rather than a near-duplicate created.
+
+**Identity is the slug, not the string.** The backend folds tags before slugifying
+(`café` → `cafe`), so the input compares on the slug rather than case-insensitively
+on the raw text. A plain comparison let "Café" and "cafe" through as two chips,
+which the backend then silently collapsed into one — the contributor saw a tag
+disappear with no explanation.
+
+`src/lib/tag-slug.ts` restates the backend's folding so the input can dedupe and
+preview correctly. It is a preview, not an authority: the backend re-slugifies
+whatever it receives, and nothing downstream trusts the local value.
+
+**Creating a new tag is still allowed**, and the dropdown says what it will become
+(`New tag /machine-learning`). That teaches the folding rule and shows the tag as it
+will appear in a URL, rather than having it happen invisibly on submit.
+
+**An unsupported script says so.** Cyrillic, Greek and CJK cannot be folded, and
+the backend rejects them with its own message. The input detects that up front and
+explains it, instead of showing an empty slug preview that would read as a bug.
+
+Keyboard: arrows move, Enter selects the highlighted row (or commits the draft as a
+new tag), Escape closes, Backspace on an empty field removes the last chip. Options
+carry `tabIndex={-1}` so Tab does not walk into the list — focus stays on the
+input, which points at the active row with `aria-activedescendant`.
+
+A failed suggestion lookup is swallowed. Free text has always worked, so a network
+blip should not turn tagging into a dead end.
 
 ## Known gaps
 

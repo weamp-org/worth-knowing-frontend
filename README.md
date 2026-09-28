@@ -78,7 +78,7 @@ src/
 │   ├── resource-card.tsx    # One resource in the feed
 │   ├── resource-feed.tsx    # Feed + "Load more" (client)
 │   ├── share-resource-form.tsx  # Share/edit form (client)
-│   ├── tag-input.tsx        # Tag chips (client)
+│   ├── tag-input.tsx        # Tag typeahead + chips (client)
 │   ├── query-provider.tsx   # TanStack Query provider (staleTime: 30s)
 │   ├── theme-provider.tsx   # next-themes provider wrapper
 │   └── theme-toggle.tsx     # Light/dark toggle button
@@ -89,6 +89,7 @@ src/
 │   ├── format.ts            # Deterministic date/host formatting
 │   ├── resource-types.ts    # Types mirroring the backend's DTOs
 │   ├── resource-form-schema.ts # Zod schema mirroring CreateResourceDto
+│   ├── tag-slug.ts            # Client mirror of the backend's tag folding
 │   ├── resources-api.ts     # Typed calls to the resource endpoints
 │   ├── resource-queries.ts  # Server-only reads (notFound, per-request cache)
 │   └── utils.ts             # cn() re-export (from the `cn` package)
