@@ -6,7 +6,7 @@ import {
   UserButton,
 } from "@clerk/nextjs";
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Inter } from "next/font/google";
+import { Geist, Geist_Mono, Instrument_Serif, Inter } from "next/font/google";
 import Link from "next/link";
 
 import { QueryProvider } from "@/components/query-provider";
@@ -18,6 +18,12 @@ import { cn } from "@/lib/utils";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
+
+const instrumentSerifHeading = Instrument_Serif({
+  subsets: ["latin"],
+  weight: ["400"],
+  variable: "--font-heading",
+});
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -51,6 +57,7 @@ export default function RootLayout({
         geistMono.variable,
         "font-sans",
         inter.variable,
+        instrumentSerifHeading.variable,
       )}
     >
       <body className="min-h-full flex flex-col">

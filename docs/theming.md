@@ -68,6 +68,20 @@ Worth Knowing uses shadcn/ui's CSS variable system defined in `src/app/globals.c
 
 Use these variables in your components with Tailwind classes: `bg-background`, `text-foreground`, `bg-primary`, etc.
 
+## Font tokens
+
+Two font families are loaded in `src/app/layout.tsx` via `next/font/google` and exposed as CSS variables:
+
+| Variable | Family | Utility |
+|---|---|---|
+| `--font-sans` | Inter | `font-sans` (applied to `<html>`) |
+| `--font-heading` | Instrument Serif | `font-heading` |
+| `--font-geist-mono` | Geist Mono | `font-mono` |
+
+`--font-heading` is **opt-in**: declaring the token does not change how anything renders. Only elements carrying the `font-heading` class get Instrument Serif. Today that is just `CardTitle` and `DialogTitle` — page headings like the `<h1>` in `src/app/page.tsx` stay on Inter unless you add the class.
+
+Instrument Serif is loaded at **weight 400 only**. Pair `font-heading` with `font-normal`; `font-bold` has no matching face and the browser will synthesize a faux bold.
+
 ## Adding custom theme tokens
 
 1. Add the variable in `globals.css` — both in `:root` (light) and `.dark` (dark)
