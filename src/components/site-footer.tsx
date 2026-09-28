@@ -4,9 +4,9 @@ import Link from "next/link";
 const WEAMP_URL = "https://weamp.org";
 
 /**
- * In-app, because Worth Knowing spans two independently versioned repos. A
- * link to either repo's GitHub graph could only ever name half the people — see
- * `src/lib/contributors.ts`.
+ * The in-app page, which links to each repo's own contributor graph. A link
+ * straight to the frontend's graph would omit anyone who only contributed to
+ * the backend.
  */
 const CONTRIBUTORS_PATH = "/contributors";
 
