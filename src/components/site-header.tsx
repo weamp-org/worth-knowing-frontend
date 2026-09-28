@@ -1,6 +1,7 @@
 "use client";
 
 import { Show, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
+import { SettingsIcon } from "lucide-react";
 import Link from "next/link";
 
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -49,8 +50,18 @@ export function SiteHeader() {
           </Show>
 
           <Show when="signed-in">
-            <Button asChild size="sm" variant="ghost">
-              <Link href="/settings">Settings</Link>
+            {/*
+              A gear rather than a word on narrow screens, matching the theme
+              toggle beside it. Unlike the share glyphs, a gear has no competing
+              meaning, so it survives without a label.
+            */}
+            <Button asChild size="sm" variant="ghost" className="px-3 sm:px-4">
+              <Link href="/settings">
+                <SettingsIcon aria-hidden="true" className="sm:hidden" />
+                <span className="hidden sm:inline">Settings</span>
+                {/* The icon carries no accessible name on its own. */}
+                <span className="sr-only sm:hidden">Settings</span>
+              </Link>
             </Button>
             {/*
               The filled button in the header, and the only one: sign-in above
