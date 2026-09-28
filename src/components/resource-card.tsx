@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
+import { contributorLabel } from "@/lib/contributor";
 import { formatDate, getHostname } from "@/lib/format";
 import {
   ACCESS_TYPE_LABELS,
@@ -47,11 +48,7 @@ export function ResourceCard({ resource }: { resource: Resource }) {
       <p className="line-clamp-3 text-sm leading-relaxed">{resource.why}</p>
 
       <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-        <span>
-          {resource.contributor
-            ? `Shared by ${resource.contributor.name}`
-            : "Shared by a contributor who has since left"}
-        </span>
+        <span>{contributorLabel(resource)}</span>
         {resource.tags.map((tag) => (
           // A `#` in a slug starts a fragment, so the slug has to be encoded
           // rather than dropped into the path as-is.

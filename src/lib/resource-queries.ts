@@ -1,3 +1,4 @@
+import { auth } from "@clerk/nextjs/server";
 import axios from "axios";
 import { notFound } from "next/navigation";
 import { cache } from "react";
@@ -13,16 +14,30 @@ import { getResource } from "@/lib/resources-api";
 export const getCachedResource = cache((id: string) => getResource(id));
 
 /**
- * Fetch a resource, turning a 404 into the app's 404 page.
+ * Fetch a resource as the signed-in user, so an anonymous one is not redacted.
+ *
+ * The edit form needs the real payload: it has to know the stored
+ * `isAnonymous` to pre-fill the toggle, and the ownership guard needs the
+ * contributor. Public reads go through {@link getCachedResource}, which carries
+ * no token and therefore gets the redacted shape.
+ */
+export async function getResourceForViewer(id: string): Promise<Resource> {
+  const { getToken } = await auth();
+
+  return getResource(id, (await getToken()) ?? undefined);
+}
+
+/**
+ * Turns a 404 into the app's 404 page.
  *
  * Anything else is rethrown. A backend that is down or erroring is a fault the
  * error boundary should report, not evidence that the resource does not exist —
  * collapsing both into `notFound()` would make an outage look like an empty
  * database.
  */
-export async function getResourceOrNotFound(id: string): Promise<Resource> {
+async function orNotFound(load: () => Promise<Resource>): Promise<Resource> {
   try {
-    return await getCachedResource(id);
+    return await load();
   } catch (error) {
     if (axios.isAxiosError(error) && error.response?.status === 404) {
       notFound();
@@ -30,4 +45,14 @@ export async function getResourceOrNotFound(id: string): Promise<Resource> {
 
     throw error;
   }
+}
+
+/** Public read. Redacts an anonymous resource, since no viewer is passed. */
+export function getResourceOrNotFound(id: string): Promise<Resource> {
+  return orNotFound(() => getCachedResource(id));
+}
+
+/** Authenticated read. Un-redacted for the owner, so usable by the edit page. */
+export function getResourceForViewerOrNotFound(id: string): Promise<Resource> {
+  return orNotFound(() => getResourceForViewer(id));
 }

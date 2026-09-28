@@ -43,9 +43,17 @@ export async function listResources(
   return response.data;
 }
 
-export async function getResource(id: string): Promise<Resource> {
+export async function getResource(
+  id: string,
+  /**
+   * A Clerk session token. Public reads pass nothing and get the redacted
+   * shape; the edit page passes one so the backend can tell it is the owner.
+   */
+  token?: string,
+): Promise<Resource> {
   const response = await api.get<Resource>(
     `/resources/${encodeURIComponent(id)}`,
+    token ? { headers: { Authorization: `Bearer ${token}` } } : undefined,
   );
 
   return response.data;
@@ -60,12 +68,26 @@ export async function listTags(query?: string): Promise<TagSearchResult[]> {
   return response.data;
 }
 
+/**
+ * Whether the caller contributed this resource.
+ *
+ * A separate call because a resource shared anonymously is redacted, so its
+ * own response cannot say who wrote it — yet the client still needs to know
+ * whether to offer an edit.
+ */
+export async function isMyResource(id: string): Promise<boolean> {
+  const response = await api.get<{ isMine: boolean }>(
+    `/resources/${encodeURIComponent(id)}/mine`,
+  );
+
+  return response.data.isMine;
+}
+
 export async function createResource(input: ResourceInput): Promise<Resource> {
   const response = await api.post<Resource>("/resources", input);
 
   return response.data;
 }
-
 export async function updateResource(
   id: string,
   input: ResourceInput,

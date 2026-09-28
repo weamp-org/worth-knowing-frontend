@@ -78,6 +78,12 @@ export const resourceFormSchema = z.object({
       (tags) => tags.every((tag) => tag.length <= MAX_TAG_LENGTH),
       `Each tag has to be ${MAX_TAG_LENGTH} characters or fewer.`,
     ),
+  /**
+   * Always present in the payload. The backend falls back to the caller's
+   * standing preference only when this is absent, and the form always has a
+   * value to send, so the override is explicit.
+   */
+  isAnonymous: z.boolean(),
 });
 
 export type ResourceFormValues = z.infer<typeof resourceFormSchema>;

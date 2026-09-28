@@ -49,6 +49,9 @@ export function SiteHeader() {
           </Show>
 
           <Show when="signed-in">
+            <Button asChild size="sm" variant="ghost">
+              <Link href="/settings">Settings</Link>
+            </Button>
             {/*
               The filled button in the header, and the only one: sign-in above
               is signed-out only, so the two never compete.

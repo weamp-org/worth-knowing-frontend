@@ -2,7 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 
 import { ShareResourceForm } from "@/components/share-resource-form";
-import { getResourceOrNotFound } from "@/lib/resource-queries";
+import { getResourceForViewerOrNotFound } from "@/lib/resource-queries";
 
 export const dynamic = "force-dynamic";
 
@@ -13,13 +13,15 @@ export default async function EditResourcePage({
 }) {
   const { id } = await params;
   const { userId } = await auth.protect();
-  const resource = await getResourceOrNotFound(id);
 
+  // Fetched as the signed-in user, not anonymously. The backend redacts an
+  // anonymous resource for everyone but its owner, so a plain public read would
+  // come back without `contributorId` and lock the owner out of their own post.
+  const resource = await getResourceForViewerOrNotFound(id);
+
+  // The backend enforces this too, but redirecting here avoids rendering a form
+  // whose save is guaranteed to be rejected.
   if (resource.contributorId !== userId) {
-    // The backend does not check ownership on PATCH — see docs/resources.md —
-    // so this guard is the only thing standing between the edit form and
-    // somebody else's resource. It is a redirect rather than a 404 because the
-    // resource does exist; the caller simply may not change it.
     redirect(`/resources/${id}`);
   }
 

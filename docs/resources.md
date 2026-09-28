@@ -12,6 +12,7 @@ Server Components and client components falls where it does.
 | `/resources/[id]`         | One resource           | Public                      |
 | `/resources/[id]/edit`    | Edit form              | Owner only                  |
 | `/share`                  | Share form             | Signed in                   |
+| `/settings`               | Your preferences       | Signed in                   |
 
 ## Reads are Server Components, writes are client components
 
@@ -129,22 +130,59 @@ input, which points at the active row with `aria-activedescendant`.
 A failed suggestion lookup is swallowed. Free text has always worked, so a network
 blip should not turn tagging into a dead end.
 
+## Anonymity
+
+A contributor can share anonymously, with a standing preference in settings and
+an override on each resource.
+
+`User.anonymousByDefault` is the preference; `Resource.isAnonymous` is the
+**resolved** value, written once at creation. That is deliberate: changing the
+default in March must not rewrite what was shared in January, because silently
+flipping a past contribution from named to anonymous is worse than either
+choice.
+
+The share and edit forms show the toggle pre-filled from the preference. It is
+always visible rather than hidden behind an "ask me" mode, because the point is
+to decide at the moment of sharing, in either direction.
+
+### What a public response reveals
+
+For an anonymous resource, `contributor` **and** `contributorId` both come back
+null. Keeping the id would defeat the feature: it is the same on that person's
+public contributions, so anyone comparing two posts could link the anonymous one
+back to a name. There is nothing left to correlate on.
+
+`isAnonymous` stays on the response. Without it a client cannot tell an
+anonymous contribution from one whose contributor deleted their account — two
+different states, worded differently in `src/lib/contributor.ts`. Calling a
+departed contributor "anonymous" would be quietly untrue.
+
+### Why the edit page passes a token
+
+Reads are Server Components with no session, so an anonymous resource arrives
+redacted and its `contributorId` is null — which would lock the owner out of
+their own resource. `getResourceForViewer` forwards a server-side Clerk token so
+the backend returns the real payload to the owner and the redacted shape to
+everyone else, including other signed-in users.
+
+`EditResourceLink` is a small client component that calls
+`GET /resources/:id/mine` before showing an edit link, because the server-
+rendered page cannot answer that question on its own. It renders nothing until
+the answer arrives, so an edit link never flashes on somebody else's resource.
+
 ## Known gaps
 
-Two things are deliberately not handled here. Both are backend issues; neither is
-worked around silently.
-
-**`PATCH /resources/:id` has no ownership check.** Any signed-in user can edit
-any resource. `/resources/[id]/edit` redirects non-owners away, but that is
-presentation, not enforcement — the endpoint itself is still open. The local
-`User.id` is the Clerk user id, so the ids are directly comparable when the check
-is added. It should be fixed in the backend, with tests.
-
 **Nothing exposes the caller's role.** `DELETE /resources/:id` is admin-gated,
-but there is no `GET /users/me`, so the frontend cannot know when to offer a
-delete button. Adding one is a product decision as much as an API one — should
-admins delete anyone's resource, or should there be a report/soft-delete path for
-ordinary contributors? Worth settling before the endpoint is written.
+but no endpoint returns the caller's role, so the frontend cannot know when to
+offer a delete button. Adding one is a product decision as much as an API one —
+should admins delete anyone's resource, or should there be a report/soft-delete
+path for ordinary contributors? Worth settling before the endpoint is written.
+
+The ownership gaps that used to be listed here are closed: `PATCH
+/resources/:id` is now owner-or-admin, and `PATCH /users/:id` is admin-only with
+a separate `/users/me/settings` route for a user's own preferences. That was not
+optional polish — with anonymity in place, either gap would have let one account
+un-anonymise somebody else's contribution or rewrite their preference.
 
 ## Types
 
@@ -158,6 +196,11 @@ The two packages are independently versioned with no shared types package, so
 
 Enum values and validation limits are restated there so a backend change that is
 not mirrored shows up as a type error rather than as a rejected request.
+
+Two client files deliberately restate a backend rule: `src/lib/tag-slug.ts`
+mirrors the tag folding, and the anonymity default is resolved client-side only
+to pre-fill a checkbox. Neither is authoritative — the backend re-derives both —
+but they are the kind of mirror that drifts if nobody says so.
 
 ## Vendored components
 

@@ -6,6 +6,7 @@ Next.js 16 frontend for Worth Knowing, with [Clerk](https://clerk.com) authentic
 
 - **Authentication** — Clerk (sign-in, sign-up, user button) with middleware
 - **Resources** — Server-rendered feed with keyset pagination, tag filter, detail pages, and share/edit forms
+- **Anonymity** — Share anonymously as a default or per resource; names withheld from public responses
 - **Forms** — React Hook Form + Zod via the shadcn `Controller` + `Field` pattern
 - **Dark mode** — Light/dark/system toggle via `next-themes`
 - **UI components** — shadcn/ui (radix-sera style) with Tailwind v4
@@ -70,6 +71,8 @@ src/
 │   ├── not-found.tsx        # 404 page
 │   ├── share/
 │   │   └── page.tsx         # Share a resource (auth required)
+│   ├── settings/
+│   │   └── page.tsx         # Your preferences (auth required)
 │   └── resources/[id]/
 │       ├── page.tsx         # Resource detail
 │       └── edit/page.tsx    # Edit your own resource
@@ -79,6 +82,9 @@ src/
 │   ├── resource-feed.tsx    # Feed + "Load more" (client)
 │   ├── share-resource-form.tsx  # Share/edit form (client)
 │   ├── tag-input.tsx        # Tag typeahead + chips (client)
+│   ├── anonymity-toggle.tsx # Per-resource anonymity switch (client)
+│   ├── anonymity-setting.tsx# Standing preference switch (client)
+│   ├── edit-resource-link.tsx # Ownership probe for the Edit affordance (client)
 │   ├── query-provider.tsx   # TanStack Query provider (staleTime: 30s)
 │   ├── theme-provider.tsx   # next-themes provider wrapper
 │   └── theme-toggle.tsx     # Light/dark toggle button
@@ -90,6 +96,8 @@ src/
 │   ├── resource-types.ts    # Types mirroring the backend's DTOs
 │   ├── resource-form-schema.ts # Zod schema mirroring CreateResourceDto
 │   ├── tag-slug.ts            # Client mirror of the backend's tag folding
+│   ├── contributor.ts         # How a contribution's author is described
+│   ├── settings-api.ts        # Your own preferences
 │   ├── resources-api.ts     # Typed calls to the resource endpoints
 │   ├── resource-queries.ts  # Server-only reads (notFound, per-request cache)
 │   └── utils.ts             # cn() re-export (from the `cn` package)

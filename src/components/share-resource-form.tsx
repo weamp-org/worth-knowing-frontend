@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 
+import { AnonymityToggle } from "@/components/anonymity-toggle";
 import { TagInput } from "@/components/tag-input";
 import { Button } from "@/components/ui/button";
 import {
@@ -61,7 +62,18 @@ const FORM_ID = "resource-form";
  * Built from `Controller` plus `Field` rather than the older `FormField`
  * wrappers, per https://ui.shadcn.com/docs/forms/react-hook-form.
  */
-export function ShareResourceForm({ resource }: { resource?: Resource }) {
+export function ShareResourceForm({
+  resource,
+  anonymousByDefault = false,
+}: {
+  resource?: Resource;
+  /**
+   * The caller's standing preference, pre-fetched by the server component.
+   * Only sets the initial value — flipping the toggle overrides it for this
+   * resource alone.
+   */
+  anonymousByDefault?: boolean;
+}) {
   const router = useRouter();
   const isEditing = resource !== undefined;
 
@@ -77,6 +89,10 @@ export function ShareResourceForm({ resource }: { resource?: Resource }) {
           // Slugs are the identity and `name` is the display form as the
           // contributor typed it, so the name is what an edit form shows.
           tags: resource.tags.map((tag) => tag.name),
+          // Editing shows what is stored, not what the current default is.
+          // Re-prefilling from the preference would silently flip every
+          // anonymous post to public the moment the default changed.
+          isAnonymous: resource.isAnonymous,
         }
       : {
           title: "",
@@ -84,6 +100,7 @@ export function ShareResourceForm({ resource }: { resource?: Resource }) {
           type: "OTHER",
           why: "",
           tags: [],
+          isAnonymous: anonymousByDefault,
         },
   });
 
@@ -280,6 +297,10 @@ export function ShareResourceForm({ resource }: { resource?: Resource }) {
                   )}
                 </Field>
               )}
+            />
+            <AnonymityToggle
+              defaultAnonymous={anonymousByDefault}
+              id={`${FORM_ID}-anonymous`}
             />
           </FieldGroup>
         </form>

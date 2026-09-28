@@ -1,10 +1,10 @@
-import { auth } from "@clerk/nextjs/server";
-import { PencilIcon } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { EditResourceLink } from "@/components/edit-resource-link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { contributorLabel } from "@/lib/contributor";
 import { formatDate, getHostname } from "@/lib/format";
 import {
   getCachedResource,
@@ -43,11 +43,7 @@ export default async function ResourcePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const { userId } = await auth();
   const resource = await getResourceOrNotFound(id);
-
-  // The local `User.id` *is* the Clerk user id, so this comparison is sound.
-  const isOwner = userId !== null && resource.contributorId === userId;
 
   return (
     <article className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-10">
@@ -79,14 +75,7 @@ export default async function ResourcePage({
         >
           {getHostname(resource.url)}
         </a>
-        {isOwner ? (
-          <Button asChild variant="ghost" className="ml-auto">
-            <Link href={`/resources/${resource.id}/edit`}>
-              <PencilIcon />
-              Edit
-            </Link>
-          </Button>
-        ) : null}
+        <EditResourceLink resourceId={resource.id} />
       </div>
 
       <section className="border-l-2 border-border pl-6">
@@ -99,11 +88,7 @@ export default async function ResourcePage({
       </section>
 
       <footer className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-        <span>
-          {resource.contributor
-            ? `Shared by ${resource.contributor.name}`
-            : "Shared by a contributor who has since left"}
-        </span>
+        <span>{contributorLabel(resource)}</span>
         {resource.tags.map((tag) => (
           <Badge key={tag.id} variant="ghost" asChild>
             <Link href={`/?tag=${encodeURIComponent(tag.slug)}`}>
