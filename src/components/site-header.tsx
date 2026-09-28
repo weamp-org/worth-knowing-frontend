@@ -50,10 +50,14 @@ export function SiteHeader() {
 
           <Show when="signed-in">
             {/*
-              The filled button in the header. Sharing is the action the product
-              exists for, so it takes the primary treatment. Never two at once:
-              this is signed-in only, and the filled sign-in beside it is
-              signed-out only.
+              The filled button in the header, and the only one: sign-in above
+              is signed-out only, so the two never compete.
+
+              A word rather than an icon on purpose. The share glyphs all carry
+              a different meaning — the three-node one is network sharing, the
+              arrow out of a box is export — and this button means "submit
+              something you found worth knowing". It also stays a filled button
+              the eye can pick out, which an icon-only control loses.
             */}
             <Button asChild size="sm">
               <Link href="/share">
