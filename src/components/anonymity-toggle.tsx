@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Controller, useFormContext } from "react-hook-form";
+import type { Control } from "react-hook-form";
+import { Controller } from "react-hook-form";
 
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import type { ResourceFormValues } from "@/lib/resource-form-schema";
 
 /**
  * Per-resource anonymity, defaulting to the contributor's standing preference.
@@ -13,17 +15,22 @@ import { Switch } from "@/components/ui/switch";
  * point is that the contributor decides at the moment of sharing, and a
  * hidden toggle makes that impossible to override in either direction.
  *
- * Deliberately uncontrolled — the form is the source of truth, and the
- * preference is only read once to choose the initial value.
+ * Takes `control` as a prop rather than calling `useFormContext`, because the
+ * form has no `FormProvider` around it — every field in `ShareResourceForm`
+ * passes `control` to its `Controller` directly, and reaching for context here
+ * would be the one place assuming a provider that does not exist. It reads as
+ * a null context at runtime rather than a type error, so it only shows up in a
+ * browser.
  */
 export function AnonymityToggle({
+  control,
   defaultAnonymous,
   id,
 }: {
+  control: Control<ResourceFormValues>;
   defaultAnonymous: boolean;
   id: string;
 }) {
-  const { control } = useFormContext();
   const [initial, setInitial] = useState(defaultAnonymous);
 
   // Re-read if the preference arrives after first paint; the form's default

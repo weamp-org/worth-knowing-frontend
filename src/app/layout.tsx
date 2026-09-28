@@ -73,7 +73,15 @@ export default function RootLayout({
                   Skip to content
                 </a>
                 <SiteHeader />
-                <main id="main" className="flex-1">
+                {/*
+                  `flex flex-col` so the centred pages — the error boundary,
+                  the 404, and the loading spinner — can actually centre. They
+                  all carry `flex-1 justify-center` on their root, which does
+                  nothing unless their parent is a flex container: `main` was a
+                  plain block, so the child sized to its content and the
+                  "Something went wrong" text sat directly under the header.
+                */}
+                <main id="main" className="flex flex-1 flex-col">
                   {children}
                 </main>
                 <SiteFooter />

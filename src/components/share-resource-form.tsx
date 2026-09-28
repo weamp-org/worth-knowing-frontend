@@ -299,6 +299,7 @@ export function ShareResourceForm({
               )}
             />
             <AnonymityToggle
+              control={form.control}
               defaultAnonymous={anonymousByDefault}
               id={`${FORM_ID}-anonymous`}
             />
