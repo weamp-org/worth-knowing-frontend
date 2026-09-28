@@ -5,12 +5,14 @@ Next.js 16 frontend for Worth Knowing, with [Clerk](https://clerk.com) authentic
 ## Features
 
 - **Authentication** — Clerk (sign-in, sign-up, user button) with middleware
+- **Resources** — Server-rendered feed with keyset pagination, tag filter, detail pages, and share/edit forms
+- **Forms** — React Hook Form + Zod via the shadcn `Controller` + `Field` pattern
 - **Dark mode** — Light/dark/system toggle via `next-themes`
 - **UI components** — shadcn/ui (radix-sera style) with Tailwind v4
 - **Code quality** — Biome (linter + formatter), Husky + lint-staged
 - **TypeScript** — Strict mode, `@/*` path alias
 - **React Compiler** — Enabled in `next.config.ts`
-- **Data fetching** — TanStack Query + Axios with Clerk JWT auth interceptor
+- **Data fetching** — Server Components for public reads, TanStack Query + Axios with Clerk JWT auth interceptor for writes
 - **Layout** — Semantic header/main/footer, loading, error, and 404 pages
 
 ## Prerequisites
@@ -18,6 +20,7 @@ Next.js 16 frontend for Worth Knowing, with [Clerk](https://clerk.com) authentic
 - [Node.js](https://nodejs.org) 24+
 - [pnpm](https://pnpm.io) 11.2.2
 - A [Clerk](https://clerk.com) application (free tier)
+- The [backend](../worth-knowing-backend) running on port 3000
 
 ## Quick start
 
@@ -36,6 +39,24 @@ pnpm dev
 
 Visit `http://localhost:3001`. Sign up via the nav to test authentication.
 
+### Running the backend
+
+The resource pages read from the NestJS backend, so it needs to be up too. It
+lives in a **separate repository** with its own dependencies and lockfile — there
+is no root task runner, and this package has no way to start it.
+
+```bash
+cd ../worth-knowing-backend
+cp .env.local.example .env.local   # then fill in DATABASE_URL and the Clerk keys
+docker compose up -d               # local Postgres
+pnpm start:dev                      # http://localhost:3000/api/v1
+```
+
+The backend allows CORS from `FRONTEND_BASE_URL`, which defaults to
+`http://localhost:3001`. With both running, the feed at `/` shows whatever the
+database holds. Swagger UI is at `http://localhost:3000/api/v1/documentation`
+outside production.
+
 ## Project structure
 
 ```text
@@ -43,25 +64,33 @@ src/
 ├── app/
 │   ├── globals.css          # Tailwind v4 + shadcn theme tokens
 │   ├── layout.tsx           # Root layout (Clerk, ThemeProvider, header/footer)
-│   ├── page.tsx             # Home page (auth-aware greeting)
+│   ├── page.tsx             # Resource feed (tag filter + pagination)
 │   ├── loading.tsx          # Loading spinner (page transitions)
 │   ├── error.tsx            # Error boundary
-│   └── not-found.tsx        # 404 page
+│   ├── not-found.tsx        # 404 page
+│   ├── share/
+│   │   └── page.tsx         # Share a resource (auth required)
+│   └── resources/[id]/
+│       ├── page.tsx         # Resource detail
+│       └── edit/page.tsx    # Edit your own resource
 ├── components/
-│   ├── ui/
-│   │   ├── button.tsx       # shadcn/ui Button
-│   │   ├── card.tsx         # shadcn/ui Card
-│   │   ├── dialog.tsx       # shadcn/ui Dialog
-│   │   ├── form.tsx         # shadcn/ui Form
-│   │   ├── input.tsx        # shadcn/ui Input
-│   │   ├── label.tsx        # shadcn/ui Label
-│   │   └── sonner.tsx       # shadcn/ui Sonner toasts
+│   ├── ui/                  # shadcn/ui (Biome-ignored, vendored)
+│   ├── resource-card.tsx    # One resource in the feed
+│   ├── resource-feed.tsx    # Feed + "Load more" (client)
+│   ├── share-resource-form.tsx  # Share/edit form (client)
+│   ├── tag-input.tsx        # Tag chips (client)
 │   ├── query-provider.tsx   # TanStack Query provider (staleTime: 30s)
 │   ├── theme-provider.tsx   # next-themes provider wrapper
 │   └── theme-toggle.tsx     # Light/dark toggle button
 ├── lib/
 │   ├── api.ts               # Axios instance + auth interceptor
 │   ├── auth-token-setter.tsx # Clerk JWT → Axios interceptor
+│   ├── api-error.ts         # Backend error → human-readable message
+│   ├── format.ts            # Deterministic date/host formatting
+│   ├── resource-types.ts    # Types mirroring the backend's DTOs
+│   ├── resource-form-schema.ts # Zod schema mirroring CreateResourceDto
+│   ├── resources-api.ts     # Typed calls to the resource endpoints
+│   ├── resource-queries.ts  # Server-only reads (notFound, per-request cache)
 │   └── utils.ts             # cn() re-export (from the `cn` package)
 └── proxy.ts                 # Clerk middleware (Next.js 16 name)
 ```
@@ -88,6 +117,7 @@ src/
 ## Docs
 
 - [Authentication](docs/auth.md) — Clerk setup, middleware, auth patterns
+- [Resources](docs/resources.md) — Routes, server/client split, forms, known backend gaps
 - [Theming](docs/theming.md) — Dark mode, CSS variables, custom tokens
 - [Deployment](docs/deployment.md) — Build, environment variables, deploy targets
 

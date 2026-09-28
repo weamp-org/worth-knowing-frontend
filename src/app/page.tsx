@@ -1,22 +1,94 @@
-import { currentUser } from "@clerk/nextjs/server";
+import { auth } from "@clerk/nextjs/server";
+import type { Metadata } from "next";
+import Link from "next/link";
 
-export default async function Home() {
-  const user = await currentUser();
+import { ResourceFeed } from "@/components/resource-feed";
+import { Badge } from "@/components/ui/badge";
+import type { TagSearchResult } from "@/lib/resource-types";
+import { listResources, listTags } from "@/lib/resources-api";
+
+/**
+ * Every render reads live data from the backend, so this must not be
+ * prerendered at build time — `pnpm build` runs without the backend up.
+ */
+export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "Worth Knowing",
+  description:
+    "Discover things worth knowing, from people who found them worth knowing.",
+};
+
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ tag?: string }>;
+}) {
+  const { tag } = await searchParams;
+
+  const [{ userId }, page, tags] = await Promise.all([
+    // Only used to decide whether the empty state offers a share button. The
+    // feed itself is public either way.
+    auth(),
+    listResources({ tag }),
+    listTags(),
+  ]);
 
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-8 p-8">
-      <h1 className="text-4xl font-bold tracking-tight">Worth Knowing</h1>
-      {user ? (
-        <p className="text-lg text-muted-foreground">
-          Welcome back,{" "}
-          <span className="font-medium text-foreground">
-            {user.firstName || user.emailAddresses[0]?.emailAddress}
-          </span>
-          .
-        </p>
-      ) : (
-        <p className="text-lg text-muted-foreground">Sign in to get started.</p>
-      )}
+    <div className="mx-auto w-full max-w-3xl px-4 py-10">
+      <h1 className="font-heading text-4xl font-semibold tracking-wide">
+        Worth Knowing
+      </h1>
+      <p className="mt-3 text-muted-foreground">
+        Discover things worth knowing, from people who found them worth knowing.
+      </p>
+
+      <TagFilter tags={tags} activeTag={tag} />
+
+      <div className="mt-6">
+        <ResourceFeed
+          // Changing the tag has to reset the accumulated pages, or the feed
+          // would show page two of the previous tag underneath page one of this
+          // one.
+          key={tag ?? "all"}
+          initialItems={page.items}
+          initialNextCursor={page.nextCursor}
+          tag={tag}
+          canShare={userId !== null}
+        />
+      </div>
     </div>
+  );
+}
+
+/**
+ * The vocabulary, most-used first — `GET /tags` already sorts by usage, so
+ * there is nothing to rank here.
+ */
+function TagFilter({
+  tags,
+  activeTag,
+}: {
+  tags: TagSearchResult[];
+  activeTag?: string;
+}) {
+  if (tags.length === 0) return null;
+
+  return (
+    <nav aria-label="Filter by tag" className="mt-8 flex flex-wrap gap-2">
+      <Badge variant={activeTag ? "ghost" : "secondary"} asChild>
+        <Link href="/">Everything</Link>
+      </Badge>
+      {tags.map((tag) => (
+        <Badge
+          key={tag.id}
+          variant={activeTag === tag.slug ? "secondary" : "ghost"}
+          asChild
+        >
+          {/* `#` is legal in a slug and starts a fragment, hence the encoding. */}
+          <Link href={`/?tag=${encodeURIComponent(tag.slug)}`}>{tag.name}</Link>
+        </Badge>
+      ))}
+    </nav>
   );
 }

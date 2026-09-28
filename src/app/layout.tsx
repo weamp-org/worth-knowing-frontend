@@ -12,6 +12,7 @@ import Link from "next/link";
 import { QueryProvider } from "@/components/query-provider";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { Button } from "@/components/ui/button";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthTokenSetter } from "@/lib/auth-token-setter";
 import { cn } from "@/lib/utils";
@@ -85,6 +86,9 @@ export default function RootLayout({
                     <SignUpButton />
                   </Show>
                   <Show when="signed-in">
+                    <Button asChild size="sm" variant="outline">
+                      <Link href="/share">Share something</Link>
+                    </Button>
                     <UserButton />
                   </Show>
                 </header>

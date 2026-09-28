@@ -36,4 +36,4 @@ Run `pnpm typecheck && pnpm lint` before submitting changes.
 - Keep changes focused to a single concern
 - If adding an env var, update `.env.local.example` and document it in the README
 
-See [docs/](docs/) for detailed guides on auth, theming, and deployment.
+See [docs/](docs/) for detailed guides on auth, resources, theming, and deployment.
