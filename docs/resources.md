@@ -170,6 +170,35 @@ everyone else, including other signed-in users.
 rendered page cannot answer that question on its own. It renders nothing until
 the answer arrives, so an edit link never flashes on somebody else's resource.
 
+## 404s are soft, and that is deliberate
+
+A missing resource renders the 404 page correctly, but with HTTP **200**, not
+404. This is Next.js's documented behaviour, not a bug here: `src/app/loading.tsx`
+wraps every route in a Suspense boundary, and once a response starts streaming
+the status can no longer be changed. Next compensates by injecting
+`<meta name="robots" content="noindex">`, so these pages stay out of search
+results. Verified in both dev and a production build.
+
+Unmatched URLs (`/nope`) are unaffected — those are handled at the routing
+level and return a real 404. Only ids that reach a page and then fail are soft.
+
+Left alone on purpose. The options and what they cost:
+
+- **Check existence in `proxy.ts`** — the fix Next names. Costs an extra backend
+  round trip on every resource view, duplicating the fetch the page already
+  makes, and needs care to fire only on that path.
+- **Delete `loading.tsx`** — the long-standing workaround. It did not change the
+  status in dev, so it may not work at all, and it costs the loading spinner on
+  every navigation.
+
+The only thing lost is that monitoring and analytics count missing resources as
+200s. For a page search engines are told not to index, that seemed the cheaper
+trade. Revisit if dead-link crawling ever matters.
+
+Worth knowing if this is ever investigated again: an earlier theory blamed
+Clerk's proxy, because every response carries `x-middleware-rewrite`. That was
+wrong — stripping the proxy and Clerk entirely reproduced the 200.
+
 ## Known gaps
 
 **Nothing exposes the caller's role.** `DELETE /resources/:id` is admin-gated,

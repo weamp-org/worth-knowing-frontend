@@ -30,6 +30,18 @@ export async function getResourceForViewer(id: string): Promise<Resource> {
 /**
  * Turns a 404 into the app's 404 page.
  *
+ * Note the HTTP status will be 200, not 404, when this runs during a streamed
+ * render — which it does, because `src/app/loading.tsx` puts every route behind
+ * a Suspense boundary. That is Next.js's documented behaviour, not a fault:
+ * once the response has begun streaming the status can no longer be changed.
+ * Next compensates by injecting `<meta name="robots" content="noindex">`, so
+ * these stay out of search results.
+ *
+ * Deliberately left alone. Getting a real 404 means checking existence in
+ * `proxy.ts` before the render starts, which costs an extra backend round trip
+ * on every resource view and duplicates the fetch below. Verified not worth it
+ * for a page nobody indexes. See `docs/resources.md`.
+ *
  * Anything else is rethrown. A backend that is down or erroring is a fault the
  * error boundary should report, not evidence that the resource does not exist —
  * collapsing both into `notFound()` would make an outage look like an empty
