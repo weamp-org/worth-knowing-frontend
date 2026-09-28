@@ -99,3 +99,18 @@ export async function updateResource(
 
   return response.data;
 }
+
+/**
+ * Removes a resource permanently, for everyone.
+ *
+ * The contributor may do this to their own contribution, and so may an admin.
+ * The response is discarded by the caller — it redirects to the feed, which
+ * refetches — so the body is only here because the route returns one.
+ */
+export async function deleteResource(id: string): Promise<Resource> {
+  const response = await api.delete<Resource>(
+    `/resources/${encodeURIComponent(id)}`,
+  );
+
+  return response.data;
+}

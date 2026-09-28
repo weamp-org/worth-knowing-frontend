@@ -165,10 +165,11 @@ their own resource. `getResourceForViewer` forwards a server-side Clerk token so
 the backend returns the real payload to the owner and the redacted shape to
 everyone else, including other signed-in users.
 
-`EditResourceLink` is a small client component that calls
-`GET /resources/:id/mine` before showing an edit link, because the server-
-rendered page cannot answer that question on its own. It renders nothing until
-the answer arrives, so an edit link never flashes on somebody else's resource.
+`ResourceOwnerActions` is a small client component that calls
+`GET /resources/:id/mine` before showing anything, because the server-rendered
+page cannot answer that question on its own. It renders nothing until the answer
+arrives, so a delete button never flashes on somebody else's resource. Edit and
+Remove live in the one component so the question is asked once.
 
 ## 404s
 
@@ -191,19 +192,44 @@ Two earlier theories were wrong, in case they come up again: it was not Clerk's
 proxy (stripping the proxy and Clerk entirely still gave 200), and it was not
 `force-dynamic` (removing it still gave 200).
 
-## Known gaps
+## Deleting a resource
 
-**Nothing exposes the caller's role.** `DELETE /resources/:id` is admin-gated,
-but no endpoint returns the caller's role, so the frontend cannot know when to
-offer a delete button. Adding one is a product decision as much as an API one —
-should admins delete anyone's resource, or should there be a report/soft-delete
-path for ordinary contributors? Worth settling before the endpoint is written.
+`DELETE /resources/:id` is contributor-or-admin, and the frontend offers a
+**Remove** button beside Edit on your own resource. It deletes immediately and
+permanently, for everyone.
 
-The ownership gaps that used to be listed here are closed: `PATCH
-/resources/:id` is now owner-or-admin, and `PATCH /users/:id` is admin-only with
-a separate `/users/me/settings` route for a user's own preferences. That was not
-optional polish — with anonymity in place, either gap would have let one account
-un-anonymise somebody else's contribution or rewrite their preference.
+That is the only self-service correction the product offers. Before this, the
+sole exit was an admin, and there is no admin — `pnpm user:set-role` by hand is
+not a moderation system. Sharing something you regret had no remedy, which is a
+real failure and an invitation to post defensively.
+
+**The confirmation is the enforcement, not a permission check.** Requiring an
+admin to delete your own post is gatekeeping. The dialog instead names the
+resource and says plainly that the explanation goes too, which is the part
+people would not otherwise expect to lose.
+
+### Why there is no "remove my name" action
+
+It was proposed and dropped as strictly dominated:
+
+| Action              | Name hidden | Can you edit it later | Content stays |
+| ------------------- | ----------- | --------------------- | ------------- |
+| Share anonymously   | yes         | **yes**               | yes           |
+| Remove my name      | yes         | no                    | yes           |
+| Delete for everyone | yes         | n/a                   | no            |
+
+Anonymity already hides the name **and** leaves the resource editable. Detaching
+the contributor outright would only take away the author's ability to fix a typo
+or un-share if the link turns out to be wrong. So the dialog points at
+"Edit → Share anonymously" as the middle path rather than offering a third
+button — one sentence in the confirmation instead of a permanent new state to
+model, word, and explain.
+
+**No soft delete.** No `deletedAt`, no purge job. `AGENTS.md` asks for simple
+before complex, and a product with two resources does not need reversible
+deletion. Revisit when there is engagement data and a moderation queue worth
+protecting. Reporting and flagging are also absent, and are a real moderation
+design rather than a missing endpoint.
 
 ## Types
 

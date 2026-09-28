@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { EditResourceLink } from "@/components/edit-resource-link";
+import { ResourceOwnerActions } from "@/components/resource-owner-actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { contributorLabel } from "@/lib/contributor";
@@ -75,7 +75,7 @@ export default async function ResourcePage({
         >
           {getHostname(resource.url)}
         </a>
-        <EditResourceLink resourceId={resource.id} />
+        <ResourceOwnerActions resourceId={resource.id} title={resource.title} />
       </div>
 
       <section className="border-l-2 border-border pl-6">
