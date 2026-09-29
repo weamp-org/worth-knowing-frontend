@@ -22,6 +22,13 @@ import type {
 export interface ListResourcesParams {
   /** A tag slug, exactly as `GET /tags` returned it. */
   tag?: string;
+  /**
+   * One contributor's resources, by their handle.
+   *
+   * Combines with `tag` rather than replacing it — a profile's listing uses this
+   * alone, the feed uses `tag` alone, and the backend ANDs whatever it is sent.
+   */
+  contributor?: string;
   /** Opaque cursor from a previous page's `nextCursor`. */
   cursor?: string;
   limit?: number;
@@ -35,6 +42,7 @@ export async function listResources(
     // of the query string entirely.
     params: {
       ...(params.tag ? { tag: params.tag } : {}),
+      ...(params.contributor ? { contributor: params.contributor } : {}),
       ...(params.cursor ? { cursor: params.cursor } : {}),
       ...(params.limit ? { limit: params.limit } : {}),
     },

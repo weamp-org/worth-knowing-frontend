@@ -5,14 +5,16 @@ Server Components and client components falls where it does.
 
 ## Routes
 
-| Route                     | Renders                | Auth                        |
-| ------------------------- | ---------------------- | --------------------------- |
-| `/`                       | Feed, newest first     | Public                      |
-| `/?tag=<slug>`            | Feed filtered by tag   | Public                      |
-| `/resources/[id]`         | One resource           | Public                      |
-| `/resources/[id]/edit`    | Edit form              | Owner only                  |
-| `/share`                  | Share form             | Signed in                   |
-| `/settings`               | Your preferences       | Signed in                   |
+| Route                  | Renders                | Auth                        |
+| ---------------------- | ---------------------- | --------------------------- |
+| `/`                    | Feed, newest first     | Public                      |
+| `/?tag=<slug>`         | Feed filtered by tag   | Public                      |
+| `/resources/[id]`      | One resource           | Public                      |
+| `/resources/[id]/edit` | Edit form              | Owner only                  |
+| `/share`               | Share form             | Signed in, username claimed |
+| `/settings`            | Your preferences       | Signed in                   |
+| `/u/[username]`        | A profile              | Public                      |
+| `/settings/profile`    | Username, bio, privacy | Signed in                   |
 
 ## Reads are Server Components, writes are client components
 
@@ -29,9 +31,9 @@ That splits cleanly, because the backend splits too:
 - `POST` and `PATCH /resources` sit behind `ClerkAuthGuard`, so they have to
   come from the browser, where the interceptor is installed.
 
-| File                       | Role                                                        |
-| -------------------------- | ----------------------------------------------------------- |
-| `src/lib/resources-api.ts` | One function per endpoint, all on the shared instance       |
+| File                          | Role                                                         |
+| ----------------------------- | ------------------------------------------------------------ |
+| `src/lib/resources-api.ts`    | One function per endpoint, all on the shared instance        |
 | `src/lib/resource-queries.ts` | Server-only reads, incl. `notFound()` and per-request dedupe |
 
 ### `force-dynamic`
@@ -60,6 +62,11 @@ The parent sets `key={tag}` on `ResourceFeed`, so changing the filter remounts i
 and drops the accumulated pages — otherwise the feed would show page two of the
 previous tag underneath page one of the new one.
 
+A profile's listing is the same component with `contributor` set instead of
+`tag`, and it carries the filter into the "load more" request. It is the one
+client component in the read path, so a filter that was not carried would make
+page two of a profile be page two of the whole feed. See `docs/profiles.md`.
+
 ## Hydration
 
 Cards render inside that client component, so every value they show is rendered
@@ -85,6 +92,11 @@ has been removed as unused.
   `cafe`) and rejects Cyrillic, Greek, and CJK with its own message. That folding
   is not reimplemented here. The client checks length and emptiness; when the
   backend rejects a tag, its message is surfaced verbatim as a form error.
+
+The same reasoning is behind `src/lib/profile-form-schema.ts`, and it goes
+further: the username rules live in one shared `usernameProblem` function rather
+than as zod patterns, precisely because a pattern would have to duplicate the
+backend's folding to avoid rejecting `Café` and `AdaL`. See `docs/profiles.md`.
 
 `accessType` is not in the schema. The form does not ask for it, and the backend
 defaults it to `UNKNOWN`.

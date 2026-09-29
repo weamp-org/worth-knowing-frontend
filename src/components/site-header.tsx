@@ -1,7 +1,7 @@
 "use client";
 
 import { Show, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
-import { SettingsIcon } from "lucide-react";
+import { LibraryIcon, SettingsIcon } from "lucide-react";
 import Link from "next/link";
 
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -62,6 +62,12 @@ export function SiteHeader() {
               toggle beside it. Unlike the share glyphs, a gear has no competing
               meaning, so it survives without a label.
             */}
+            {/*
+              The gear, not a profile link. It goes to settings, which is where
+              a person goes to change something about themselves; the profile is
+              a page *about* them, so it is reached from a byline rather than
+              from the chrome.
+            */}
             <Button asChild size="sm" variant="ghost" className="px-3 sm:px-4">
               <Link href="/settings">
                 <SettingsIcon aria-hidden="true" className="sm:hidden" />
@@ -84,6 +90,19 @@ export function SiteHeader() {
               <Link href="/share">
                 <span className="hidden sm:inline">Share something</span>
                 <span className="sm:hidden">Share</span>
+              </Link>
+            </Button>
+            {/*
+              Last, and an icon, because it is the least frequent thing here. The
+              gear is a settings page, this is a personal filing system, and the
+              share button is the product's own verb — so the order is by how
+              often somebody reaches for it, which puts this one at the end.
+            */}
+            <Button asChild size="sm" variant="ghost" className="px-3 sm:px-4">
+              <Link href="/collections">
+                <LibraryIcon aria-hidden="true" className="sm:hidden" />
+                <span className="hidden sm:inline">Collections</span>
+                <span className="sr-only sm:hidden">Collections</span>
               </Link>
             </Button>
             <UserButton />
