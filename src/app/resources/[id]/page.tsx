@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-
+import { CollectionPicker } from "@/components/collection-picker";
 import { ResourceOwnerActions } from "@/components/resource-owner-actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -76,6 +76,13 @@ export default async function ResourcePage({
           {getHostname(resource.url)}
         </a>
         <ResourceOwnerActions resourceId={resource.id} title={resource.title} />
+        {/*
+          Curating happens here, after the contribution, rather than as a step in
+          the share form. The central contribution stays exactly as simple as it
+          was, and somebody who finds a resource months later can still collect
+          it. Renders nothing for a signed-out reader.
+        */}
+        <CollectionPicker resourceId={resource.id} />
       </div>
 
       <section className="border-l-2 border-border pl-6">

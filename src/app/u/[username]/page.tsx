@@ -2,9 +2,11 @@ import { auth } from "@clerk/nextjs/server";
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { CollectionCard } from "@/components/collection-card";
 import { ResourceFeed } from "@/components/resource-feed";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { getCachedPublicCollections } from "@/lib/collection-queries";
 import { formatDate } from "@/lib/format";
 import { getCachedProfile, getProfileOrNotFound } from "@/lib/profile-queries";
 import { listResources } from "@/lib/resources-api";
@@ -67,7 +69,14 @@ export default async function ProfilePage({
   // but falling back to the param keeps the listing query well-formed rather
   // than sending `contributor=` and matching every unclaimed account.
   const handle = profile.usernameLower ?? username;
-  const resources = await listResources({ contributor: handle });
+
+  // Independent reads, so one round trip. The collections list is public and
+  // filters private ones out server-side, so it needs no token and returns the
+  // same thing to every viewer.
+  const [resources, publicCollections] = await Promise.all([
+    listResources({ contributor: handle }),
+    getCachedPublicCollections(handle),
+  ]);
 
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-10">
@@ -121,13 +130,40 @@ export default async function ProfilePage({
           would eventually put an edit link on somebody else's profile.
         */}
         {profile.isOwner ? (
-          <div>
+          <div className="flex flex-wrap gap-3">
             <Button asChild variant="outline" size="sm">
               <Link href="/settings/profile">Edit your profile</Link>
+            </Button>
+            <Button asChild variant="outline" size="sm">
+              <Link href="/collections">Your collections</Link>
             </Button>
           </div>
         ) : null}
       </header>
+
+      {/*
+        Public collections, and the *only* way one is discovered. There is no
+        global browse: a public collection is a statement by somebody about their
+        taste, which is worth surfacing next to the taste they expressed as
+        contributions, and not worth ranking into a feed of its own. Listing them
+        here also means the "who curated this" question has an obvious answer —
+        the profile you are already on.
+
+        Only public ones. A private collection 404s for anybody but its owner, so
+        asking for it would be asking for a list of 404s.
+      */}
+      {publicCollections.items.length > 0 ? (
+        <section className="mt-10">
+          <h2 className="text-xs font-semibold tracking-widest uppercase text-muted-foreground">
+            Collections
+          </h2>
+          <div className="mt-2">
+            {publicCollections.items.map((collection) => (
+              <CollectionCard key={collection.id} collection={collection} />
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <div className="mt-8">
         <ResourceFeed
