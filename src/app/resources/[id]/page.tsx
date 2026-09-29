@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ResourceOwnerActions } from "@/components/resource-owner-actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { contributorLabel } from "@/lib/contributor";
+import { ContributorByline } from "@/lib/contributor";
 import { formatDate, getHostname } from "@/lib/format";
 import {
   getCachedResource,
@@ -88,7 +88,7 @@ export default async function ResourcePage({
       </section>
 
       <footer className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-        <span>{contributorLabel(resource)}</span>
+        <ContributorByline resource={resource} />
         {resource.tags.map((tag) => (
           <Badge key={tag.id} variant="ghost" asChild>
             <Link href={`/?tag=${encodeURIComponent(tag.slug)}`}>

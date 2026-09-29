@@ -34,11 +34,22 @@ export function ResourceFeed({
   initialItems,
   initialNextCursor,
   tag,
+  contributor,
   canShare,
 }: {
   initialItems: Resource[];
   initialNextCursor: string | null;
   tag?: string;
+  /**
+   * Restricts the listing to one contributor's resources, the same as the
+   * backend's `?contributor=`.
+   *
+   * Carried on every "load more" request, and deliberately not derivable from the
+   * page it was rendered on: the feed is the one client component here, so the
+   * filter has to travel with the cursor or page two of a profile would be page
+   * two of the whole feed.
+   */
+  contributor?: string;
   /** Whether to offer the share call to action in the empty state. */
   canShare: boolean;
 }) {
@@ -54,7 +65,11 @@ export function ResourceFeed({
     setError(null);
 
     try {
-      const page = await listResources({ tag, cursor: nextCursor });
+      const page = await listResources({
+        tag,
+        contributor,
+        cursor: nextCursor,
+      });
 
       setItems((current) => [...current, ...page.items]);
       setNextCursor(page.nextCursor);
@@ -66,26 +81,34 @@ export function ResourceFeed({
   }
 
   if (items.length === 0) {
-    // A tag filter with nothing behind it is a dead end, so it offers a way
-    // back out. The unfiltered empty state is the first thing a new visitor
-    // sees, so it points at the contribution the product is built around.
+    // A tag filter or a profile with nothing behind it is a dead end, so both
+    // offer a way back out. The unfiltered empty state is the first thing a new
+    // visitor sees, so it points at the contribution the product is built around.
+    const isFiltered = Boolean(tag) || Boolean(contributor);
+
     return (
       <Empty className="border">
         <EmptyHeader>
           <EmptyMedia variant="icon">
-            {tag ? <TagIcon /> : <LibraryIcon />}
+            {isFiltered ? <TagIcon /> : <LibraryIcon />}
           </EmptyMedia>
           <EmptyTitle>
-            {tag ? "Nothing tagged with this yet" : "Nothing shared yet"}
+            {tag
+              ? "Nothing tagged with this yet"
+              : contributor
+                ? "Nothing shared yet"
+                : "Nothing shared yet"}
           </EmptyTitle>
           <EmptyDescription>
             {tag
               ? "No resource carries this tag so far."
-              : "Be the first to share something you found worth knowing."}
+              : contributor
+                ? "This profile has no contributions that show a name. Anything shared anonymously is not listed, including for the person it belongs to."
+                : "Be the first to share something you found worth knowing."}
           </EmptyDescription>
         </EmptyHeader>
         <EmptyContent>
-          {tag ? (
+          {isFiltered ? (
             <Button asChild variant="outline">
               <Link href="/">See everything</Link>
             </Button>

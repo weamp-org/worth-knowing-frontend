@@ -62,6 +62,12 @@ export function SiteHeader() {
               toggle beside it. Unlike the share glyphs, a gear has no competing
               meaning, so it survives without a label.
             */}
+            {/*
+              The gear, not a profile link. It goes to settings, which is where
+              a person goes to change something about themselves; the profile is
+              a page *about* them, so it is reached from a byline rather than
+              from the chrome.
+            */}
             <Button asChild size="sm" variant="ghost" className="px-3 sm:px-4">
               <Link href="/settings">
                 <SettingsIcon aria-hidden="true" className="sm:hidden" />
