@@ -185,6 +185,7 @@ is a migration of every read and write at once, not a per-component choice.
 - [Resources](docs/resources.md) — Routes, server/client split, forms, known backend gaps
 - [Collections](docs/collections.md) — Routes, visibility, the picker, and the 404 rule
 - [Theming](docs/theming.md) — Dark mode, CSS variables, custom tokens
+- [Dates](docs/dates.md) — Why we use `Intl` and not a date library
 - [Deployment](docs/deployment.md) — Build, environment variables, deploy targets
 
 ## License

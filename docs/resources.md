@@ -74,7 +74,8 @@ twice — once by Node, once by the browser. `src/lib/format.ts` therefore pins
 `Intl.DateTimeFormat` to `en-GB` and `timeZone: "UTC"`. A bare
 `toLocaleDateString()` resolves against the machine's zone with whatever ICU
 data it ships, which differs between Node and the browser, and the mismatch
-surfaces as a hydration error.
+surfaces as a hydration error. See `docs/dates.md` for the full reasoning,
+including why we do not use a date library here.
 
 ## Forms
 
