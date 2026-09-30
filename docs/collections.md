@@ -90,9 +90,24 @@ as simple as it was, and a resource is collected afterwards. The backend API is
 identical either way, so this was a choice about the share form rather than a
 limitation.
 
-It reads `GET /collections/me?resourceId=…`, which answers "does this collection
-already hold this resource" for **every** collection in one request rather than
-one per collection. The `containsResource` flag is `false` throughout when the
+It reads `GET /collections/me?resourceId=…` — **from the resource page, not from
+the client**. The page already re-renders per request, so it asks once and passes
+the answer in as `initialCollections`, following the `ResourceFeed` `initialItems`
+pattern.
+
+The first version fetched it from the picker, on open, which meant the button
+read "Save" for a resource you had already saved until you clicked it. That is
+the bug the pattern exists to prevent: the control's entire job is to say whether
+something is already saved, and a client-side cache cannot fix it either, because
+on a server-rendered page its best case is "still loading" on arrival. Correct
+first paint means asking during SSR.
+
+For the same reason the picker has no `useUser()`. The page calls `auth()` and
+gates server-side, so a signed-out reader's markup does not contain the control at
+all rather than rendering it and hiding after hydration.
+
+Membership still costs one request for every collection rather than one each,
+because `?resourceId=` answers it per row. The `containsResource` flag is `false` throughout when the
 parameter is absent, so only send it when a resource is actually in hand.
 
 Toggles are **optimistic with a rollback**. A one-click toggle with no

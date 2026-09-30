@@ -1,88 +1,58 @@
 "use client";
 
-import { useUser } from "@clerk/nextjs";
 import { CheckIcon, FolderPlusIcon, Loader2Icon } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { getApiErrorMessage } from "@/lib/api-error";
+import type { CollectionSummary } from "@/lib/collection-types";
 import {
   addResourceToCollection,
-  listMyCollections,
   removeResourceFromCollection,
 } from "@/lib/collections-api";
 
 /**
  * Add or remove this resource from one of your collections.
  *
- * Rendered on a resource's own page, as a popover. Deliberately *not* a step in
+ * Rendered on a resource's own page. Deliberately *not* a step in
  * `POST /resources`: the central contribution stays exactly as simple as it was,
  * and a resource is collected afterwards from here. The API is the same either
  * way, so this was a choice about the share form rather than a limitation.
  *
- * Membership comes from one request, not one per collection. `?resourceId=`
- * makes `GET /collections/me` report it per row, which is the difference between
- * opening this popover costing one round trip and costing as many as you own
- * lists. Asking the backend is also the only way to be right: "is this saved" is
- * not something the client can work out from a resource it already has.
+ * **The collection list arrives as a prop, already answered.** An earlier version
+ * fetched it from here, on open, and that was wrong: the button's entire job is
+ * to say whether this resource is already saved, and a control that reads "Save"
+ * until you click it makes you re-save things you have saved — or worse, leave
+ * because you cannot tell. A client-side cache cannot fix that either, because
+ * on a server-rendered page its best case is "still loading" on arrival. The
+ * resource page already re-renders per request, so it asks once and passes the
+ * answer down, and this control is correct on first paint with no loading state
+ * to get wrong.
  *
- * Nothing renders for a signed-out reader, and the first render is empty rather
- * than a spinner: a signed-in reader's own action appearing a beat late is
- * unremarkable, whereas a control that flashes and then vanishes is not.
+ * That is also why there is no `useUser()` here. The page already called `auth()`
+ * and decided whether to render this at all, so the gate is server-side and
+ * authoritative rather than a client check that resolves a tick later.
+ *
+ * The one request `?resourceId=` buys is membership for every collection at once
+ * rather than one per collection — the difference between this list costing a
+ * round trip and costing as many as you own lists.
  */
-export function CollectionPicker({ resourceId }: { resourceId: string }) {
-  const { isSignedIn, isLoaded } = useUser();
-  const router = useRouter();
-
-  const [collections, setCollections] = useState<
-    { id: string; title: string; containsResource: boolean }[]
-  >([]);
+export function CollectionPicker({
+  resourceId,
+  initialCollections,
+}: {
+  resourceId: string;
+  initialCollections: CollectionSummary[];
+}) {
+  // Local state, seeded from the server's answer, because the optimistic toggle
+  // below has to survive re-renders and the server is not re-consulted after
+  // every click.
+  const [collections, setCollections] =
+    useState<CollectionSummary[]>(initialCollections);
   const [isOpen, setIsOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [pendingId, setPendingId] = useState<string | null>(null);
-  const [hasLoaded, setHasLoaded] = useState(false);
-
-  useEffect(() => {
-    if (!isSignedIn) return;
-
-    let cancelled = false;
-
-    // Only once the popover is opened. A signed-out reader never gets here, and
-    // a reader who never opens it should not pay for the request.
-    if (!isOpen || hasLoaded) return;
-
-    setIsLoading(true);
-
-    // Called from the browser, where the shared instance's interceptor supplies
-    // the Clerk JWT. No explicit token here — and none is possible: this needs
-    // `useAuth().getToken`, and the interceptor already does exactly that.
-    listMyCollections({ resourceId })
-      .then((page) => {
-        if (cancelled) return;
-        setCollections(page.items);
-        setHasLoaded(true);
-      })
-      .catch(() => {
-        // A failed read is not a reason to block the button — the person may
-        // still want to open it and retry, or to create a list. The list simply
-        // stays empty, which reads as "you have no collections yet".
-        if (!cancelled) setCollections([]);
-      })
-      .finally(() => {
-        if (!cancelled) setIsLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [isOpen, isSignedIn, hasLoaded, resourceId]);
-
-  // `isLoaded` so a Clerk-signed-out reader does not briefly see the control on
-  // the way to resolving.
-  if (!isLoaded || !isSignedIn) return null;
 
   const savedCount = collections.filter((c) => c.containsResource).length;
 
@@ -108,11 +78,6 @@ export function CollectionPicker({ resourceId }: { resourceId: string }) {
         await addResourceToCollection(collectionId, resourceId);
         toast.success("Saved to the collection.");
       }
-
-      // A collection's own page shows a count and a listing that are now stale.
-      // `force-dynamic` means the next visit re-fetches, but the page they are
-      // looking at is this one.
-      router.refresh();
     } catch (error) {
       setCollections((current) =>
         current.map((c) =>
@@ -140,18 +105,19 @@ export function CollectionPicker({ resourceId }: { resourceId: string }) {
         onClick={() => setIsOpen((open) => !open)}
         aria-expanded={isOpen}
       >
-        <FolderPlusIcon aria-hidden="true" />
-        {savedCount > 0 ? `Saved (${savedCount})` : "Save"}
+        {savedCount > 0 ? (
+          <CheckIcon aria-hidden="true" />
+        ) : (
+          <FolderPlusIcon aria-hidden="true" />
+        )}
+        {savedCount > 0
+          ? `Saved to ${savedCount} ${savedCount === 1 ? "collection" : "collections"}`
+          : "Save"}
       </Button>
 
       {isOpen ? (
         <div className="absolute top-full right-0 z-40 mt-2 w-72 rounded-lg border border-border bg-popover shadow-md">
-          {isLoading ? (
-            <p className="flex items-center gap-2 px-4 py-4 text-sm text-muted-foreground">
-              <Loader2Icon aria-hidden="true" className="size-4 animate-spin" />
-              Loading your collections…
-            </p>
-          ) : collections.length === 0 ? (
+          {collections.length === 0 ? (
             <div className="px-4 py-4">
               <p className="text-sm text-muted-foreground">
                 You have not made a collection yet.
@@ -167,9 +133,12 @@ export function CollectionPicker({ resourceId }: { resourceId: string }) {
                   key={collection.id}
                   className="flex items-center gap-3 px-4 py-3"
                 >
-                  <span className="min-w-0 flex-1 truncate text-sm">
+                  <Link
+                    href={`/collections/${collection.id}`}
+                    className="min-w-0 flex-1 truncate text-sm hover:underline"
+                  >
                     {collection.title}
-                  </span>
+                  </Link>
                   {pendingId === collection.id ? (
                     <Loader2Icon
                       aria-hidden="true"

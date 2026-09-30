@@ -40,12 +40,24 @@ import type { PaginatedResources } from "@/lib/resource-types";
  * The parameter is unused in the body on purpose — the token comes from `auth()`
  * rather than from the id — so it is underscore-prefixed to say "this exists to
  * be a memo key". Do not drop it, and do not pass the caller without it.
+ *
+ * `resourceId` is optional and widens the answer rather than narrowing it: pass
+ * it and each row also reports `containsResource`, which is what a resource
+ * page's save control needs in order to render its own state correctly. Leaving
+ * it off would mean that control fetching for itself on open, and a
+ * "is this saved?" button that reads wrong until you touch it is worse than the
+ * request it saves.
  */
-export const getCachedMyCollections = cache(async (_viewerId: string) => {
-  const { getToken } = await auth();
+export const getCachedMyCollections = cache(
+  async (_viewerId: string, resourceId?: string) => {
+    const { getToken } = await auth();
 
-  return listMyCollections({ token: (await getToken()) ?? undefined });
-});
+    return listMyCollections({
+      resourceId,
+      token: (await getToken()) ?? undefined,
+    });
+  },
+);
 
 /**
  * One owner's public collections, for their profile page.

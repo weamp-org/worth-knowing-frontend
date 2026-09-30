@@ -14,7 +14,7 @@ Next.js 16 frontend for Worth Knowing, with [Clerk](https://clerk.com) authentic
 - **Code quality** — Biome (linter + formatter), Husky + lint-staged
 - **TypeScript** — Strict mode, `@/*` path alias
 - **React Compiler** — Enabled in `next.config.ts`
-- **Data fetching** — Server Components for reads, Axios with a Clerk JWT interceptor for writes
+- **Data fetching** — Server Components for reads, Axios with a Clerk JWT interceptor for writes (TanStack Query is installed but unused)
 - **Layout** — Semantic header/main/footer, loading, error, and 404 pages
 
 ## Prerequisites

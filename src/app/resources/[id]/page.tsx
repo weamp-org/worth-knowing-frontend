@@ -1,9 +1,11 @@
+import { auth } from "@clerk/nextjs/server";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { CollectionPicker } from "@/components/collection-picker";
 import { ResourceOwnerActions } from "@/components/resource-owner-actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { getCachedMyCollections } from "@/lib/collection-queries";
 import { ContributorByline } from "@/lib/contributor";
 import { formatDate, getHostname } from "@/lib/format";
 import {
@@ -45,6 +47,15 @@ export default async function ResourcePage({
   const { id } = await params;
   const resource = await getResourceOrNotFound(id);
 
+  // Only fetched for a signed-in reader, and only because the save control
+  // cannot render itself honestly without it. `auth()` resolves server-side, so
+  // the control appears in the first paint rather than popping in a tick later —
+  // and a signed-out reader costs nothing.
+  const { userId } = await auth();
+  const myCollections = userId
+    ? await getCachedMyCollections(userId, resource.id)
+    : null;
+
   return (
     <article className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-10">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
@@ -80,9 +91,18 @@ export default async function ResourcePage({
           Curating happens here, after the contribution, rather than as a step in
           the share form. The central contribution stays exactly as simple as it
           was, and somebody who finds a resource months later can still collect
-          it. Renders nothing for a signed-out reader.
+          it.
+
+          Gated server-side on `auth()`, so a signed-out reader's markup does not
+          contain it at all rather than rendering a control that decides to hide
+          itself after hydration.
         */}
-        <CollectionPicker resourceId={resource.id} />
+        {myCollections ? (
+          <CollectionPicker
+            resourceId={resource.id}
+            initialCollections={myCollections.items}
+          />
+        ) : null}
       </div>
 
       <section className="border-l-2 border-border pl-6">
