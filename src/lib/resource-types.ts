@@ -130,6 +130,17 @@ export interface Resource {
    */
   isAnonymous: boolean;
   tags: TagSummary[];
+  /**
+   * How many people saved this.
+   *
+   * Public, unlike every other field here. A signal of *interest* rather than of
+   * quality — it says people came back for it, not that it is the best one here.
+   *
+   * Whether **you** saved it is not on this shape. That is per-viewer and comes
+   * from `GET /saved/:resourceId`, so a public read and an owner's read can
+   * never be confused for one another.
+   */
+  savedCount: number;
 }
 
 export interface PaginatedResources {
