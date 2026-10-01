@@ -9,6 +9,7 @@ Next.js 16 frontend for Worth Knowing, with [Clerk](https://clerk.com) authentic
 - **Anonymity** — Share anonymously as a default or per resource; names withheld from public responses
 - **Collections** — Group resources into private-by-default lists; save from any resource, public ones listed on your profile
 - **Saved** — Bookmark any resource in one click, independent of collections; a public save count on every resource
+- **Comments** — A flat, chronological discussion thread per resource with one level of reply, public to read
 - **Forms** — React Hook Form + Zod via the shadcn `Controller` + `Field` pattern
 - **Dark mode** — Light/dark/system toggle via `next-themes`
 - **UI components** — shadcn/ui (radix-sera style) with Tailwind v4
@@ -127,6 +128,9 @@ src/
 │   ├── collections-api.ts   # Typed calls to the collection endpoints
 │   ├── saved-queries.ts     # Server-only saved reads (token + cache)
 │   ├── saved-api.ts         # Typed calls to the saved endpoints
+│   ├── comments-queries.ts  # Server-only thread read (token + cache)
+│   ├── comments-api.ts      # Typed calls to the comment endpoints
+│   ├── comment-types.ts     # Hand-maintained mirror of the comment DTOs
 │   ├── tag-slug.ts            # Client mirror of the backend's tag folding
 │   ├── username.ts            # Client mirror of the backend's username rules
 │   ├── contributor.tsx        # How a contributor is described, and their byline
@@ -191,6 +195,7 @@ is a migration of every read and write at once, not a per-component choice.
 - [Resources](docs/resources.md) — Routes, server/client split, forms, known backend gaps
 - [Collections](docs/collections.md) — Routes, visibility, the picker, and the 404 rule
 - [Saved](docs/saved.md) — The bookmark list, why it is not a collection, and the save button
+- [Comments](docs/comments.md) — The thread on a resource page, the reply quote, and why it is not a tree
 - [Theming](docs/theming.md) — Dark mode, CSS variables, custom tokens
 - [Dates](docs/dates.md) — Why we use `Intl` and not a date library
 - [Deployment](docs/deployment.md) — Build, environment variables, deploy targets

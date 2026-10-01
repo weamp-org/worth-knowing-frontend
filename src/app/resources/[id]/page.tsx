@@ -2,11 +2,13 @@ import { auth } from "@clerk/nextjs/server";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { CollectionPicker } from "@/components/collection-picker";
+import { CommentSection } from "@/components/comment-section";
 import { ResourceOwnerActions } from "@/components/resource-owner-actions";
 import { SaveButton } from "@/components/save-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getCachedMyCollections } from "@/lib/collection-queries";
+import { getCommentsForViewer } from "@/lib/comments-queries";
 import { ContributorByline } from "@/lib/contributor";
 import { formatDate, getHostname } from "@/lib/format";
 import {
@@ -64,6 +66,11 @@ export default async function ResourcePage({
         getSavedStateForViewer(resource.id, userId),
       ])
     : [null, null];
+
+  // Fetched for every reader, unlike the two above: the thread is public on the
+  // backend. The session token is passed so each comment arrives with `isMine`
+  // decided — which is the one thing here a client cannot work out for itself.
+  const comments = await getCommentsForViewer(resource.id);
 
   return (
     <article className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-10">
@@ -148,6 +155,26 @@ export default async function ResourcePage({
           </Badge>
         ))}
       </footer>
+
+      {/*
+        Discussion, below the contribution it is about.
+
+        Fetched server-side with the session token so each comment arrives with
+        `isMine` already decided — the same reason `isSaved` is read here rather than
+        in the browser. A thread that renders and then corrects itself is worse than
+        one that is simply short.
+
+        Rendered for every reader, signed out included, matching the backend's
+        `@Public()` listing. The composer is what needs a session, and the section
+        decides that from the `userId` already read above rather than letting a
+        control appear and hide itself after hydration.
+      */}
+      <CommentSection
+        canComment={userId !== null}
+        initialPage={comments}
+        resourceId={resource.id}
+        totalCount={resource.commentCount}
+      />
     </article>
   );
 }
