@@ -2,6 +2,7 @@ import api from "@/lib/api";
 import type {
   Comment,
   CommentInput,
+  PaginatedCommentReports,
   PaginatedComments,
 } from "@/lib/comment-types";
 
@@ -79,6 +80,34 @@ export async function createComment(
 }
 
 /**
+ * The moderation queue. Admin only — the backend refuses anybody else with a 403.
+ *
+ * One row per report rather than per reported comment, so a comment several people
+ * flagged occupies several rows here. `reportCount` on each row is what makes that
+ * readable at a glance. See `docs/comments.md` on the backend for why it is not
+ * grouped.
+ *
+ * **No reporter is ever returned.** The backend does not select one, and there is no
+ * field here to look for.
+ */
+export async function listCommentReports(
+  params: ListCommentsParams = {},
+  token?: string,
+): Promise<PaginatedCommentReports> {
+  const response = await api.get<PaginatedCommentReports>("/comment-reports", {
+    params: {
+      ...(params.cursor ? { cursor: params.cursor } : {}),
+      ...(params.limit ? { limit: params.limit } : {}),
+    },
+    // A Server Component has no interceptor, so it attaches the token itself. See
+    // `getCommentsForViewer`, which does the same for the thread.
+    ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
+  });
+
+  return response.data;
+}
+
+/**
  * Removes a comment. Author or admin only.
  *
  * `204` with no body, so there is nothing to return. Callers drop the row locally.
@@ -88,4 +117,28 @@ export async function deleteComment(
   commentId: string,
 ): Promise<void> {
   await api.delete(`${thread(resourceId)}/${encodeURIComponent(commentId)}`);
+}
+
+/**
+ * Flags a comment for the moderators.
+ *
+ * Idempotent, so it can be fired without checking first. `204` with no body, and
+ * **nothing changes for any reader** — the reported comment looks exactly as it did.
+ * That is why there is no optimistic state here: the only honest thing to render
+ * afterwards is the same comment that was already there.
+ *
+ * The backend refuses a report on your own comment, so a client should not offer the
+ * control on one.
+ */
+export async function reportComment(
+  resourceId: string,
+  commentId: string,
+  reason?: string,
+): Promise<void> {
+  await api.post(
+    `${thread(resourceId)}/${encodeURIComponent(commentId)}/report`,
+    // Omitted rather than sent empty, so the backend stores no reason instead of an
+    // empty one.
+    reason ? { reason } : {},
+  );
 }

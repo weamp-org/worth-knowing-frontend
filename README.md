@@ -10,6 +10,7 @@ Next.js 16 frontend for Worth Knowing, with [Clerk](https://clerk.com) authentic
 - **Collections** — Group resources into private-by-default lists; save from any resource, public ones listed on your profile
 - **Saved** — Bookmark any resource in one click, independent of collections; a public save count on every resource
 - **Comments** — A flat, chronological discussion thread per resource with one level of reply, public to read
+- **Reporting** — Flag a comment to the moderators; invisible to every reader including its author. Queue at `/moderation`
 - **Forms** — React Hook Form + Zod via the shadcn `Controller` + `Field` pattern
 - **Dark mode** — Light/dark/system toggle via `next-themes`
 - **UI components** — shadcn/ui (radix-sera style) with Tailwind v4
@@ -91,6 +92,8 @@ src/
 │   │       └── edit/page.tsx# Edit your own collection
 │   ├── saved/
 │   │   └── page.tsx         # Your saved resources (auth required)
+│   ├── moderation/
+│   │   └── page.tsx         # Reported comments (admin only)
 │   ├── u/[username]/        # Public profile, contributions, public collections
 │   └── resources/[id]/
 │       ├── page.tsx         # Resource detail
@@ -195,7 +198,7 @@ is a migration of every read and write at once, not a per-component choice.
 - [Resources](docs/resources.md) — Routes, server/client split, forms, known backend gaps
 - [Collections](docs/collections.md) — Routes, visibility, the picker, and the 404 rule
 - [Saved](docs/saved.md) — The bookmark list, why it is not a collection, and the save button
-- [Comments](docs/comments.md) — The thread on a resource page, the reply quote, and why it is not a tree
+- [Comments](docs/comments.md) — The thread on a resource page, the reply quote, reporting, and the moderation queue
 - [Theming](docs/theming.md) — Dark mode, CSS variables, custom tokens
 - [Dates](docs/dates.md) — Why we use `Intl` and not a date library
 - [Deployment](docs/deployment.md) — Build, environment variables, deploy targets

@@ -1,14 +1,24 @@
 "use client";
 
-import { MessageSquareReplyIcon, Trash2Icon } from "lucide-react";
+import { FlagIcon, MessageSquareReplyIcon, Trash2Icon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { getApiErrorMessage } from "@/lib/api-error";
-import { type Comment, MAX_COMMENT_LENGTH } from "@/lib/comment-types";
-import { createComment, deleteComment, listComments } from "@/lib/comments-api";
+import {
+  type Comment,
+  MAX_COMMENT_LENGTH,
+  MAX_REPORT_REASON_LENGTH,
+} from "@/lib/comment-types";
+import {
+  createComment,
+  deleteComment,
+  listComments,
+  reportComment,
+} from "@/lib/comments-api";
 import { formatDate } from "@/lib/format";
 
 /**
@@ -129,6 +139,7 @@ export function CommentSection({
           {comments.map((comment) => (
             <CommentItem
               key={comment.id}
+              canComment={canComment}
               comment={comment}
               onDeleted={remove}
               onPosted={add}
@@ -247,11 +258,14 @@ function CommentComposer({
 function CommentItem({
   comment,
   resourceId,
+  canComment,
   onDeleted,
   onPosted,
 }: {
   comment: Comment;
   resourceId: string;
+  /** Whether the reader could file a report. Carried down from the section. */
+  canComment: boolean;
   onDeleted: (commentId: string) => void;
   onPosted: (comment: Comment) => void;
 }) {
@@ -335,6 +349,13 @@ function CommentItem({
             {isDeleting ? "Removing…" : "Remove"}
           </Button>
         ) : null}
+
+        {/* Reported by the reader, flagged to a moderator. Never on your own comment —
+            the backend refuses it, and offering a control that 400s would be worse
+            than not offering it. */}
+        {canComment && !comment.isMine ? (
+          <ReportButton comment={comment} resourceId={resourceId} />
+        ) : null}
       </div>
 
       {isReplying ? (
@@ -347,5 +368,97 @@ function CommentItem({
         />
       ) : null}
     </article>
+  );
+}
+
+/**
+ * Flags a comment to the moderators.
+ *
+ * What a dislike would have been, and the difference matters: nothing about a report
+ * is visible to any reader afterwards, **including the comment's author**. Showing it
+ * would turn a quiet signal into a scoreboard, so the comment renders exactly as it
+ * did and there is no state on it afterwards.
+ *
+ * A one-line reason, optional. The backend takes free text rather than a dropdown
+ * because somebody who knows a comment is malware should not have to pick a category
+ * before they can say so.
+ */
+function ReportButton({
+  comment,
+  resourceId,
+}: {
+  comment: Comment;
+  resourceId: string;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [reason, setReason] = useState("");
+  const [isPending, setIsPending] = useState(false);
+
+  async function submit() {
+    if (isPending) return;
+
+    setIsPending(true);
+
+    try {
+      await reportComment(resourceId, comment.id, reason.trim() || undefined);
+
+      setIsOpen(false);
+      setReason("");
+
+      // A confirmation, and nothing else. Not a badge, not a change to the comment —
+      // the reader is told it was sent and the thread carries on unchanged.
+      toast.success("Reported to the moderators.");
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, "Could not report that comment."));
+    } finally {
+      setIsPending(false);
+    }
+  }
+
+  if (!isOpen) {
+    return (
+      <Button
+        size="sm"
+        variant="ghost"
+        className="text-muted-foreground"
+        onClick={() => setIsOpen(true)}
+      >
+        <FlagIcon aria-hidden="true" />
+        Report
+      </Button>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      <Input
+        value={reason}
+        onChange={(event) => setReason(event.target.value)}
+        placeholder="Why should this be removed? (optional)"
+        maxLength={MAX_REPORT_REASON_LENGTH}
+        // Appears on click, so it takes focus — otherwise the reader who opened it
+        // has to go and find it.
+        autoFocus
+        aria-label="Reason for reporting this comment"
+        onKeyDown={(event) => {
+          if (event.key === "Enter") void submit();
+          if (event.key === "Escape") setIsOpen(false);
+        }}
+      />
+
+      <div className="flex items-center gap-2">
+        <Button size="sm" onClick={submit} disabled={isPending}>
+          {isPending ? "Reporting…" : "Send report"}
+        </Button>
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => setIsOpen(false)}
+          disabled={isPending}
+        >
+          Cancel
+        </Button>
+      </div>
+    </div>
   );
 }

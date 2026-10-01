@@ -88,3 +88,30 @@ export interface CommentInput {
   body: string;
   parentId?: string;
 }
+
+/** The backend's bound on a report's reason, restated for the form. */
+export const MAX_REPORT_REASON_LENGTH = 500;
+
+/** One row of the admin moderation queue, from `GET /comment-reports`. */
+export interface CommentReport {
+  /** The composite key `reporterId:commentId`. Carries no meaning to read. */
+  id: string;
+  /**
+   * The reported comment, in the public thread's own shape — `isMine` is always
+   * false here, because a moderator is looking at somebody else's comment.
+   */
+  comment: Comment;
+  /**
+   * How many people reported it. One report is a hunch, five is a pattern, and a
+   * moderator should not have to open every row to tell which is which.
+   */
+  reportCount: number;
+  /** Empty string when the reporter gave no reason. */
+  reason: string;
+  createdAt: string;
+}
+
+export interface PaginatedCommentReports {
+  items: CommentReport[];
+  nextCursor: string | null;
+}

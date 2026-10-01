@@ -39,3 +39,14 @@ export function getApiErrorMessage(error: unknown, fallback: string): string {
 
   return fallback;
 }
+
+/**
+ * Whether a request was refused for being who the caller is.
+ *
+ * Separate from {@link getApiErrorMessage} because "you may not do this" and "that
+ * failed" are different situations: one is a state to render, the other is a fault to
+ * report. Only the former should be swallowed.
+ */
+export function isForbidden(error: unknown): boolean {
+  return axios.isAxiosError(error) && error.response?.status === 403;
+}
