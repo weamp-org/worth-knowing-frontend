@@ -6,6 +6,7 @@
  *
  *   - `worth-knowing-backend/prisma/schema.prisma` (ResourceType, AccessType)
  *   - `worth-knowing-backend/src/resources/dtos/resource-response.dto.ts`
+ *   - `worth-knowing-backend/src/comments/dtos/comment-response.dto.ts`
  *   - `worth-knowing-backend/src/tags/dtos/tag-response.dto.ts`
  *   - `worth-knowing-backend/src/resources/dtos/create-resource.dto.ts`
  *
@@ -141,6 +142,17 @@ export interface Resource {
    * never be confused for one another.
    */
   savedCount: number;
+  /**
+   * How many comments this resource has.
+   *
+   * Public, like `savedCount`, and not a signal of interest or quality — it says
+   * only that people discussed it. Present so a page can render the count and a
+   * link to the discussion without a second request.
+   *
+   * The comment list itself comes from `GET /resources/:id/comments`, not from
+   * here.
+   */
+  commentCount: number;
 }
 
 export interface PaginatedResources {
