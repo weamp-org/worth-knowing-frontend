@@ -8,6 +8,7 @@ Next.js 16 frontend for Worth Knowing, with [Clerk](https://clerk.com) authentic
 - **Resources** — Server-rendered feed with keyset pagination, tag filter, detail pages, and share/edit forms
 - **Anonymity** — Share anonymously as a default or per resource; names withheld from public responses
 - **Collections** — Group resources into private-by-default lists; save from any resource, public ones listed on your profile
+- **Saved** — Bookmark any resource in one click, independent of collections; a public save count on every resource
 - **Forms** — React Hook Form + Zod via the shadcn `Controller` + `Field` pattern
 - **Dark mode** — Light/dark/system toggle via `next-themes`
 - **UI components** — shadcn/ui (radix-sera style) with Tailwind v4
@@ -87,6 +88,8 @@ src/
 │   │   └── [id]/
 │   │       ├── page.tsx     # Collection detail + contents (public or yours)
 │   │       └── edit/page.tsx# Edit your own collection
+│   ├── saved/
+│   │   └── page.tsx         # Your saved resources (auth required)
 │   ├── u/[username]/        # Public profile, contributions, public collections
 │   └── resources/[id]/
 │       ├── page.tsx         # Resource detail
@@ -105,6 +108,7 @@ src/
 │   ├── collection-resource-feed.tsx # A collection's contents + "Load more" (client)
 │   ├── collection-picker.tsx# Add/remove a resource from your collections (client)
 │   ├── collection-owner-actions.tsx # Edit/Delete on your own collection (client)
+│   ├── save-button.tsx     # Save/unsave a resource, with the public count (client)
 │   ├── query-provider.tsx   # TanStack Query provider (staleTime: 30s)
 │   ├── profile-form.tsx     # Username/bio/privacy form (client)
 │   ├── theme-provider.tsx   # next-themes provider wrapper
@@ -121,6 +125,8 @@ src/
 │   ├── collection-form-schema.ts # Zod schema mirroring CreateCollectionDto
 │   ├── collection-queries.ts # Server-only collection reads (notFound, cache)
 │   ├── collections-api.ts   # Typed calls to the collection endpoints
+│   ├── saved-queries.ts     # Server-only saved reads (token + cache)
+│   ├── saved-api.ts         # Typed calls to the saved endpoints
 │   ├── tag-slug.ts            # Client mirror of the backend's tag folding
 │   ├── username.ts            # Client mirror of the backend's username rules
 │   ├── contributor.tsx        # How a contributor is described, and their byline
@@ -184,6 +190,7 @@ is a migration of every read and write at once, not a per-component choice.
 - [Authentication](docs/auth.md) — Clerk setup, middleware, auth patterns
 - [Resources](docs/resources.md) — Routes, server/client split, forms, known backend gaps
 - [Collections](docs/collections.md) — Routes, visibility, the picker, and the 404 rule
+- [Saved](docs/saved.md) — The bookmark list, why it is not a collection, and the save button
 - [Theming](docs/theming.md) — Dark mode, CSS variables, custom tokens
 - [Dates](docs/dates.md) — Why we use `Intl` and not a date library
 - [Deployment](docs/deployment.md) — Build, environment variables, deploy targets

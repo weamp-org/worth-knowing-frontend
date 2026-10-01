@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { CollectionPicker } from "@/components/collection-picker";
 import { ResourceOwnerActions } from "@/components/resource-owner-actions";
+import { SaveButton } from "@/components/save-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getCachedMyCollections } from "@/lib/collection-queries";
@@ -13,6 +14,7 @@ import {
   getResourceOrNotFound,
 } from "@/lib/resource-queries";
 import { ACCESS_TYPE_LABELS, RESOURCE_TYPE_LABELS } from "@/lib/resource-types";
+import { getSavedStateForViewer } from "@/lib/saved-queries";
 
 export const dynamic = "force-dynamic";
 
@@ -52,9 +54,16 @@ export default async function ResourcePage({
   // the control appears in the first paint rather than popping in a tick later —
   // and a signed-out reader costs nothing.
   const { userId } = await auth();
-  const myCollections = userId
-    ? await getCachedMyCollections(userId, resource.id)
-    : null;
+
+  // Both server-side and both only for a signed-in reader. `auth()` resolves
+  // during the render, so neither control ever appears late or has to correct
+  // itself after hydration.
+  const [myCollections, isSaved] = userId
+    ? await Promise.all([
+        getCachedMyCollections(userId, resource.id),
+        getSavedStateForViewer(resource.id, userId),
+      ])
+    : [null, null];
 
   return (
     <article className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-10">
@@ -87,6 +96,21 @@ export default async function ResourcePage({
           {getHostname(resource.url)}
         </a>
         <ResourceOwnerActions resourceId={resource.id} title={resource.title} />
+        {/*
+          Save is for everybody, including signed-out readers: the count is
+          public, and it is the one signal on this page that says anybody else
+          found this worth coming back for. Only the toggle itself needs a
+          session, and the component turns out to be a no-op then — so it is
+          rendered for all and simply 401s if pressed signed out. Gate it here
+          instead, on the session we already read.
+        */}
+        {isSaved !== null ? (
+          <SaveButton
+            resourceId={resource.id}
+            initialIsSaved={isSaved}
+            initialSavedCount={resource.savedCount}
+          />
+        ) : null}
         {/*
           Curating happens here, after the contribution, rather than as a step in
           the share form. The central contribution stays exactly as simple as it
