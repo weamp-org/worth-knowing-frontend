@@ -22,6 +22,8 @@ contribution it is about. The moderation queue is the one separate route, at
 | `GET /resource-reports` | **admin** | `/moderation`, server-side |
 | `POST /comment-reports/:commentId/dismiss` | **admin** | "Keep it, close reports" |
 | `POST /resource-reports/:resourceId/dismiss` | **admin** | "Keep it, close reports" |
+| `POST /comment-reports/:commentId/undismiss` | **admin** | "Undo" on the toast |
+| `POST /resource-reports/:resourceId/undismiss` | **admin** | "Undo" on the toast |
 
 ## One client component, and why
 
@@ -215,6 +217,32 @@ has since died is worth repairing rather than throwing away.
 invisibility** — it sits next to Remove as an outlined button, with a tick rather than
 a flag. Removal is destructive and destructive controls are styled as such; dismissing
 is a decision, not a deletion.
+
+### Remove confirms, dismiss does not — and dismiss is undoable instead
+
+This is the asymmetry, and it is deliberate.
+
+**Remove asks.** It is permanent, it is for everybody, and it takes the `why` with it.
+
+**Dismiss does not ask.** It deletes nothing — the comment or contribution stays, the
+report rows stay, `dismissedAt` is a nullable column — so it is the reversible action,
+and the dialog belongs on the irreversible one.
+
+Asking anyway would be worse than useless, in two ways:
+
+- It costs every moderator an extra click on the **safe** action to guard against one
+  rare mistake. It also makes dismissal feel as heavy as removal, and then the path of
+  least resistance is remove-or-do-nothing — friction on exactly the decision a
+  moderator should be making more often.
+- A dialog on every moderation action is how people learn to click through them,
+  including the Remove one, which is the only one that genuinely needs reading.
+  `docs/profiles.md` already states it: *"a dialog on every save is how people learn
+  to click through dialogs."*
+
+So the risk is removed rather than warned about: dismissing happens immediately and the
+toast carries an **Undo**, which calls `POST .../undismiss`. Undo refetches the queue
+rather than reinserting the rows it dropped, because this component does not have them
+any more and guessing would mean inventing a report if the server disagreed.
 
 Both drop **every** row for that thing. A dismissal closes all reports at once, and a
 deletion cascades them away server-side, so leaving the others would show a moderator

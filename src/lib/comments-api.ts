@@ -154,6 +154,23 @@ export async function dismissCommentReport(commentId: string): Promise<void> {
 }
 
 /**
+ * Reopens every dismissed report on a comment.
+ *
+ * The other half of {@link dismissCommentReport}. Exists because "reversible in the
+ * database" is not "reversible for you" — without this a mis-click on a dismissal
+ * would be permanent in practice.
+ *
+ * The client offers this as an **Undo on the toast**, not as a dialog asking for
+ * confirmation first: a dialog costs every moderator an extra click on the *safe*
+ * action, and a dialog on every moderation action is how people learn to click
+ * through them — including the delete one, which is the only one that genuinely needs
+ * reading.
+ */
+export async function undismissCommentReport(commentId: string): Promise<void> {
+  await api.post(`/comment-reports/${encodeURIComponent(commentId)}/undismiss`);
+}
+
+/**
  * Removes a comment. Author or admin only.
  *
  * `204` with no body, so there is nothing to return. Callers drop the row locally.

@@ -170,6 +170,23 @@ export async function dismissResourceReport(resourceId: string): Promise<void> {
 }
 
 /**
+ * Reopens every dismissed report on a contribution.
+ *
+ * The other half of {@link dismissResourceReport}, and the reason that one needs no
+ * confirmation dialog: without a way back, a mis-click would be permanent in practice.
+ *
+ * Offered by the client as an **Undo on the toast** rather than as a dialog asking
+ * first.
+ */
+export async function undismissResourceReport(
+  resourceId: string,
+): Promise<void> {
+  await api.post(
+    `/resource-reports/${encodeURIComponent(resourceId)}/undismiss`,
+  );
+}
+
+/**
  * The resource moderation queue. Admin only — the backend refuses anybody else with
  * a 403, which `getResourceReportsForViewer` turns into rendered output.
  *

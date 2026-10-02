@@ -28,6 +28,7 @@ import {
   deleteResource,
   dismissResourceReport,
   listResourceReports,
+  undismissResourceReport,
 } from "@/lib/resources-api";
 
 /**
@@ -96,10 +97,43 @@ export function ResourceReportQueue({
     try {
       await dismissResourceReport(resourceId);
       forget(resourceId);
-      toast.success("Reports closed.");
+
+      // Undo rather than a confirmation dialog *before* the action. Dismissing deletes
+      // nothing — the contribution and the report rows both stay — so this is the
+      // reversible action and the dialog belongs on Remove.
+      //
+      // Asking here would also make dismissal feel as heavy as removal, and then the
+      // path of least resistance is remove-or-do-nothing: friction on exactly the
+      // decision a moderator should be making more often. And a dialog on every
+      // moderation action is how people learn to click through them, including the
+      // one that genuinely needs reading.
+      toast.success("Reports closed.", {
+        action: { label: "Undo", onClick: () => void undoDismiss(resourceId) },
+      });
     } catch (error) {
       toast.error(getApiErrorMessage(error, "Could not close those reports."));
+    } finally {
       setBusyId(null);
+    }
+  }
+
+  /**
+   * Reopens the reports a dismissal just closed.
+   *
+   * Refetches rather than reinserting rows: this component does not have them any
+   * more, and reconstructing them from what it remembers would mean inventing a report
+   * if the server disagreed.
+   */
+  async function undoDismiss(resourceId: string) {
+    try {
+      await undismissResourceReport(resourceId);
+
+      const page = await listResourceReports();
+
+      setReports((current) => [...page.items, ...current]);
+      toast.success("Reports reopened.");
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, "Could not reopen those reports."));
     }
   }
 

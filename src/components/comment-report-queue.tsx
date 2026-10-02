@@ -20,7 +20,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { COMMENT_REASON_LABELS, type CommentReport } from "@/lib/comment-types";
-import { deleteComment, dismissCommentReport } from "@/lib/comments-api";
+import {
+  deleteComment,
+  dismissCommentReport,
+  listCommentReports,
+  undismissCommentReport,
+} from "@/lib/comments-api";
 import { formatDate } from "@/lib/format";
 
 /**
@@ -65,7 +70,6 @@ export function CommentReportQueue({
     setError(null);
 
     try {
-      const { listCommentReports } = await import("@/lib/comments-api");
       const page = await listCommentReports({ cursor: nextCursor });
 
       setReports((current) => [...current, ...page.items]);
@@ -89,12 +93,49 @@ export function CommentReportQueue({
     try {
       await dismissCommentReport(commentId);
       forget(commentId);
-      toast.success("Reports closed.");
+
+      // Undo rather than a confirmation dialog *before* the action, and the difference
+      // matters in both directions:
+      //
+      // - A dialog costs every moderator an extra click on the *safe* action to guard
+      //   against one rare mistake. It would also make dismissal feel as heavy as
+      //   removal, and then the path of least resistance is remove-or-do-nothing —
+      //   friction on exactly the decision a moderator should be making more often.
+      // - A dialog on every moderation action is how people learn to click through
+      //   them, including the delete one, which is the only one that genuinely needs
+      //   reading. Removing still confirms; dismissing does not.
+      //
+      // Undo is what actually removes the risk, rather than warning about it.
+      toast.success("Reports closed.", {
+        action: { label: "Undo", onClick: () => void undoDismiss(commentId) },
+      });
     } catch (error) {
       toast.error(
         getApiErrorMessage(error, "Could not dismiss those reports."),
       );
+    } finally {
       setBusyId(null);
+    }
+  }
+
+  /**
+   * Reopens the reports a dismissal just closed.
+   *
+   * Refetches rather than reinserting rows: this component does not have them any
+   * more, and reconstructing them from what it remembers would mean inventing a report
+   * if the server disagreed. One request, and the queue is exactly what the server
+   * says it is.
+   */
+  async function undoDismiss(commentId: string) {
+    try {
+      await undismissCommentReport(commentId);
+
+      const page = await listCommentReports();
+
+      setReports((current) => [...page.items, ...current]);
+      toast.success("Reports reopened.");
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, "Could not reopen those reports."));
     }
   }
 
