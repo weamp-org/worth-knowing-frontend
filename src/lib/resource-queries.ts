@@ -2,8 +2,10 @@ import { auth } from "@clerk/nextjs/server";
 import axios from "axios";
 import { notFound } from "next/navigation";
 import { cache } from "react";
+import { isForbidden } from "@/lib/api-error";
+import type { PaginatedResourceReports } from "@/lib/comment-types";
 import type { Resource } from "@/lib/resource-types";
-import { getResource } from "@/lib/resources-api";
+import { getResource, listResourceReports } from "@/lib/resources-api";
 
 /**
  * Server-side reads.
@@ -67,4 +69,23 @@ export function getResourceOrNotFound(id: string): Promise<Resource> {
 /** Authenticated read. Un-redacted for the owner, so usable by the edit page. */
 export function getResourceForViewerOrNotFound(id: string): Promise<Resource> {
   return orNotFound(() => getResourceForViewer(id));
+}
+
+/**
+ * The resource moderation queue, or `null` when the caller is not allowed to see it.
+ *
+ * Same shape and the same `403`-to-`null` reasoning as
+ * `getCommentReportsForViewer`: "you are not an admin" is a state the moderation page
+ * renders, not a fault worth throwing to the error boundary.
+ */
+export async function getResourceReportsForViewer(): Promise<PaginatedResourceReports | null> {
+  const { getToken } = await auth();
+
+  try {
+    return await listResourceReports({}, (await getToken()) ?? undefined);
+  } catch (error) {
+    if (isForbidden(error)) return null;
+
+    throw error;
+  }
 }

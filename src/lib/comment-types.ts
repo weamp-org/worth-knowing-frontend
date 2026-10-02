@@ -6,9 +6,12 @@
  *
  *   - `worth-knowing-backend/src/comments/dtos/comment-response.dto.ts`
  *   - `worth-knowing-backend/src/comments/dtos/create-comment.dto.ts`
+ *   - `worth-knowing-backend/src/resources/dtos/resource-response.dto.ts` (`ResourceReport`)
  *
  * Dates are strings, not `Date`: everything here has crossed a JSON boundary.
  */
+
+import type { Resource } from "@/lib/resource-types";
 
 /** The backend's own bound, restated so the form can reject input before a round trip. */
 export const MAX_COMMENT_LENGTH = 2000;
@@ -89,12 +92,18 @@ export interface CommentInput {
   parentId?: string;
 }
 
-/** The backend's bound on a report's reason, restated for the form. */
+/**
+ * The backend's bound on a report's reason, restated for the form.
+ *
+ * Shared by both report kinds — a contribution and a comment — because the two DTOs
+ * carry the same limit for the same reason: a report is a complaint, not a second
+ * contribution.
+ */
 export const MAX_REPORT_REASON_LENGTH = 500;
 
 /** One row of the admin moderation queue, from `GET /comment-reports`. */
 export interface CommentReport {
-  /** The composite key `reporterId:commentId`. Carries no meaning to read. */
+  /** The composite key `commentId:reporterId`. Carries no meaning to read. */
   id: string;
   /**
    * The reported comment, in the public thread's own shape — `isMine` is always
@@ -113,5 +122,33 @@ export interface CommentReport {
 
 export interface PaginatedCommentReports {
   items: CommentReport[];
+  nextCursor: string | null;
+}
+
+/**
+ * One row of the resource moderation queue, from `GET /resource-reports`.
+ *
+ * The same shape as a {@link CommentReport} against a resource, for the same reason:
+ * one row per report rather than per reported thing, because grouping means paging
+ * over an aggregate that changes while you page.
+ */
+export interface ResourceReport {
+  /** The composite key `resourceId:reporterId`. Carries no meaning to read. */
+  id: string;
+  /**
+   * The reported resource, in its ordinary public shape.
+   *
+   * `contributor` is null here when the contribution was shared anonymously — not
+   * because it was deleted, which `isAnonymous` tells apart. The backend redacts it
+   * on purpose: a moderator does not get to un-withhold a name.
+   */
+  resource: Resource;
+  reportCount: number;
+  reason: string;
+  createdAt: string;
+}
+
+export interface PaginatedResourceReports {
+  items: ResourceReport[];
   nextCursor: string | null;
 }

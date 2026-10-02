@@ -246,7 +246,7 @@ field is emptied, rather than letting it read as "remove my username".
 Saving a different username **releases the old handle forever** — not to anybody
 else, and not to you. It is the one irreversible action in settings, so it is
 confirmed with a dialog naming both handles, matching the delete-resource dialog
-in `ResourceOwnerActions`.
+in `ResourceActions`.
 
 Two rules keep the dialog honest:
 

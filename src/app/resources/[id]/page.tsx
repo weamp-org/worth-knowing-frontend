@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { CollectionPicker } from "@/components/collection-picker";
 import { CommentSection } from "@/components/comment-section";
-import { ResourceOwnerActions } from "@/components/resource-owner-actions";
+import { ResourceActions } from "@/components/resource-actions";
 import { SaveButton } from "@/components/save-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -102,7 +102,11 @@ export default async function ResourcePage({
         >
           {getHostname(resource.url)}
         </a>
-        <ResourceOwnerActions resourceId={resource.id} title={resource.title} />
+        <ResourceActions
+          resourceId={resource.id}
+          title={resource.title}
+          why={resource.why}
+        />
         {/*
           Save is for everybody, including signed-out readers: the count is
           public, and it is the one signal on this page that says anybody else

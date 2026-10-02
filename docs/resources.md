@@ -178,11 +178,16 @@ their own resource. `getResourceForViewer` forwards a server-side Clerk token so
 the backend returns the real payload to the owner and the redacted shape to
 everyone else, including other signed-in users.
 
-`ResourceOwnerActions` is a small client component that calls
+`ResourceActions` is a small client component that calls
 `GET /resources/:id/mine` before showing anything, because the server-rendered
 page cannot answer that question on its own. It renders nothing until the answer
-arrives, so a delete button never flashes on somebody else's resource. Edit and
-Remove live in the one component so the question is asked once.
+arrives, so a delete button never flashes on somebody else's resource.
+
+It is **one component with two branches**, not a component per action: Edit and
+Remove share one ownership probe, and the Report control is the *other* branch
+rather than a fourth control. A report on your own contribution is refused by the
+backend, so offering one would be offering something that cannot succeed — and if
+you agree with a report about your own post, Remove is the right answer anyway.
 
 ## 404s
 

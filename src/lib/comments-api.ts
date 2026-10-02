@@ -80,7 +80,32 @@ export async function createComment(
 }
 
 /**
- * The moderation queue. Admin only — the backend refuses anybody else with a 403.
+ * Flags a comment for the moderators.
+ *
+ * Idempotent, so it can be fired without checking first. `204` with no body, and
+ * **nothing changes for any reader** — the reported comment looks exactly as it did.
+ * That is why there is no optimistic state: the only honest thing to render afterwards
+ * is the same comment that was already there.
+ *
+ * The backend refuses a report on your own comment, so a client should not offer the
+ * control on one.
+ */
+export async function reportComment(
+  resourceId: string,
+  commentId: string,
+  reason?: string,
+): Promise<void> {
+  await api.post(
+    `${thread(resourceId)}/${encodeURIComponent(commentId)}/report`,
+    // Omitted rather than sent empty, so the backend stores no reason instead of an
+    // empty one.
+    reason ? { reason } : {},
+  );
+}
+
+/**
+ * The comment moderation queue. Admin only — the backend refuses anybody else with a
+ * 403.
  *
  * One row per report rather than per reported comment, so a comment several people
  * flagged occupies several rows here. `reportCount` on each row is what makes that
@@ -117,28 +142,4 @@ export async function deleteComment(
   commentId: string,
 ): Promise<void> {
   await api.delete(`${thread(resourceId)}/${encodeURIComponent(commentId)}`);
-}
-
-/**
- * Flags a comment for the moderators.
- *
- * Idempotent, so it can be fired without checking first. `204` with no body, and
- * **nothing changes for any reader** — the reported comment looks exactly as it did.
- * That is why there is no optimistic state here: the only honest thing to render
- * afterwards is the same comment that was already there.
- *
- * The backend refuses a report on your own comment, so a client should not offer the
- * control on one.
- */
-export async function reportComment(
-  resourceId: string,
-  commentId: string,
-  reason?: string,
-): Promise<void> {
-  await api.post(
-    `${thread(resourceId)}/${encodeURIComponent(commentId)}/report`,
-    // Omitted rather than sent empty, so the backend stores no reason instead of an
-    // empty one.
-    reason ? { reason } : {},
-  );
 }

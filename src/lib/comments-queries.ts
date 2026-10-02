@@ -54,11 +54,11 @@ export async function getCommentsForViewer(
 }
 
 /**
- * The moderation queue, or `null` when the caller is not allowed to see it.
+ * The comment moderation queue, or `null` when the caller is not allowed to see it.
  *
- * A `403` is turned into `null` rather than thrown, because "you are not an admin"
- * is a state this page renders, not a fault. Throwing would take the page to the
- * error boundary and tell a signed-in reader their session broke.
+ * A `403` is turned into `null` rather than thrown, because "you are not an admin" is
+ * a state this page renders, not a fault. Throwing would take the page to the error
+ * boundary and tell a signed-in reader their session broke.
  *
  * There is no role to check beforehand: nothing in this API exposes the caller's own
  * role, so the queue is the only way to find out, and finding out is what this does.

@@ -1,4 +1,5 @@
 import api from "@/lib/api";
+import type { PaginatedResourceReports } from "@/lib/comment-types";
 import type {
   PaginatedResources,
   Resource,
@@ -118,6 +119,61 @@ export async function updateResource(
 export async function deleteResource(id: string): Promise<Resource> {
   const response = await api.delete<Resource>(
     `/resources/${encodeURIComponent(id)}`,
+  );
+
+  return response.data;
+}
+
+/**
+ * Flags a contribution for the moderators.
+ *
+ * The higher-leverage of the two report kinds, and the one that existed first in
+ * spirit: a bad link gets shared onward to people who never saw the flag, where a bad
+ * comment stays under one page.
+ *
+ * `204` with no body, and nothing changes for any reader — including the contributor.
+ * The backend refuses a report on your own contribution, so a client should not offer
+ * the control on one.
+ */
+export async function reportResource(
+  id: string,
+  reason?: string,
+): Promise<void> {
+  await api.post(
+    `/resources/${encodeURIComponent(id)}/report`,
+    reason ? { reason } : {},
+  );
+}
+
+/**
+ * The resource moderation queue. Admin only — the backend refuses anybody else with
+ * a 403, which `getResourceReportsForViewer` turns into rendered output.
+ *
+ * One row per report rather than per reported contribution, for the same reason the
+ * comment queue is: grouping means ordering by an aggregate that changes while you
+ * page. `reportCount` rides along so the queue is triageable at a glance.
+ *
+ * **No reporter is ever returned**, and an anonymously shared contribution is still
+ * redacted in the response — the backend routes it through the ordinary public read.
+ *
+ * Lives here rather than in `comments-api.ts` because it is a resource endpoint, and
+ * the two queues' response types should not sit in the same file where they can be
+ * confused for each other.
+ */
+export async function listResourceReports(
+  params: { cursor?: string; limit?: number } = {},
+  token?: string,
+): Promise<PaginatedResourceReports> {
+  const response = await api.get<PaginatedResourceReports>(
+    "/resource-reports",
+    {
+      params: {
+        ...(params.cursor ? { cursor: params.cursor } : {}),
+        ...(params.limit ? { limit: params.limit } : {}),
+      },
+      // A Server Component has no interceptor, so it attaches the token itself.
+      ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
+    },
   );
 
   return response.data;

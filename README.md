@@ -10,7 +10,7 @@ Next.js 16 frontend for Worth Knowing, with [Clerk](https://clerk.com) authentic
 - **Collections** — Group resources into private-by-default lists; save from any resource, public ones listed on your profile
 - **Saved** — Bookmark any resource in one click, independent of collections; a public save count on every resource
 - **Comments** — A flat, chronological discussion thread per resource with one level of reply, public to read
-- **Reporting** — Flag a comment to the moderators; invisible to every reader including its author. Queue at `/moderation`
+- **Reporting** — Flag a contribution or a comment to the moderators; invisible to every reader including its author. Queues at `/moderation`
 - **Forms** — React Hook Form + Zod via the shadcn `Controller` + `Field` pattern
 - **Dark mode** — Light/dark/system toggle via `next-themes`
 - **UI components** — shadcn/ui (radix-sera style) with Tailwind v4
@@ -93,7 +93,7 @@ src/
 │   ├── saved/
 │   │   └── page.tsx         # Your saved resources (auth required)
 │   ├── moderation/
-│   │   └── page.tsx         # Reported comments (admin only)
+│   │   └── page.tsx         # Reported contributions and comments (admin only)
 │   ├── u/[username]/        # Public profile, contributions, public collections
 │   └── resources/[id]/
 │       ├── page.tsx         # Resource detail
@@ -102,7 +102,7 @@ src/
 │   ├── ui/                  # shadcn/ui (Biome-ignored, vendored)
 │   ├── resource-card.tsx    # One resource in the feed (isomorphic)
 │   ├── resource-feed.tsx    # Feed + "Load more" (client)
-│   ├── resource-owner-actions.tsx # Edit/Remove on your own resource (client)
+│   ├── resource-actions.tsx # Edit/Remove on yours, Report on anyone else's (client)
 │   ├── share-resource-form.tsx  # Share/edit form (client)
 │   ├── tag-input.tsx        # Tag typeahead + chips (client)
 │   ├── anonymity-toggle.tsx # Per-resource anonymity switch (client)
@@ -134,6 +134,7 @@ src/
 │   ├── comments-queries.ts  # Server-only thread read (token + cache)
 │   ├── comments-api.ts      # Typed calls to the comment endpoints
 │   ├── comment-types.ts     # Hand-maintained mirror of the comment DTOs
+│   ├── report-dialog.tsx    # Shared report dialog, for a resource or a comment
 │   ├── tag-slug.ts            # Client mirror of the backend's tag folding
 │   ├── username.ts            # Client mirror of the backend's username rules
 │   ├── contributor.tsx        # How a contributor is described, and their byline

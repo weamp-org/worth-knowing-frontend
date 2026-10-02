@@ -16,8 +16,10 @@ contribution it is about. The moderation queue is the one separate route, at
 | `GET /resources/:id/comments` | `@Public()` | The page, server-side |
 | `POST /resources/:id/comments` | session | `CommentComposer` |
 | `DELETE /resources/:id/comments/:id` | session, or admin | `CommentItem` for own comments; `CommentReportQueue` for any |
-| `POST /resources/:id/comments/:id/report` | session | `ReportButton` |
+| `POST /resources/:id/comments/:id/report` | session | `ReportDialog`, from a comment |
+| `POST /resources/:id/report` | session | `ReportDialog`, from `ResourceActions` |
 | `GET /comment-reports` | **admin** | `/moderation`, server-side |
+| `GET /resource-reports` | **admin** | `/moderation`, server-side |
 
 ## One client component, and why
 
@@ -94,28 +96,55 @@ anchors beyond the bare URL the browser makes for us, which is the same treatmen
 
 ## Reporting
 
-A `Report` control on every comment that is not the reader's, opening a one-line
-optional reason.
+Both a contribution and a comment can be reported, through one shared
+`ReportDialog` — the same act on two different things, and two near-identical
+components would drift.
 
-**Nothing changes for any reader afterwards**, including the comment's author. There
-is no badge, no state on the comment, no "reported" marker — the only feedback is a
-toast confirming it was sent. That is not laziness: showing a report would turn a
-quiet signal into a scoreboard, and the backend agrees by writing nothing to the
-comment.
+**It is a dialog, not an inline panel**, which is what it replaced for two reasons
+beyond the truncation:
 
-Not offered on your own comment, because the backend refuses it (`400`). Offering a
-control that cannot succeed is worse than not offering it.
+- The inline panel expanded *inside* the comment list and pushed everything below it
+  down, so filing a report lost your reading position.
+- A one-line input caps what people write. Given a single-line box, people write a
+  single line. The backend has always allowed 500 characters because a report is a
+  complaint, and the UI was the thing stopping anyone using it.
 
-Reason is free text and optional rather than a select. Somebody who knows a comment
-is a malware link should not have to pick a category before they can say so.
+The dialog quotes what is being reported. Reporting the wrong thing is otherwise
+silent and unrecoverable.
 
-## The moderation queue is `/moderation`
+**Nothing changes for any reader afterwards**, including the author. No badge, no
+state on the reported thing, no marker — only the toast. Showing it would turn a
+quiet signal into a scoreboard, and the backend agrees by writing nothing.
 
-A server component that fetches `GET /comment-reports` with the session token and
-renders `CommentReportQueue`.
+### Report is not offered on your own
+
+The backend refuses both kinds (`400`). For a contribution, `ResourceActions` already
+knows the answer — it is one component precisely because Edit and Remove share a
+single ownership probe — so Report is the *other* branch rather than a fourth button.
+If somebody agrees with a report about their own post, `Remove` is the correct and
+much stronger answer.
+
+For a comment, the thread already has `isMine`, so the control is simply absent.
+
+### `ResourceOwnerActions` became `ResourceActions`
+
+It probes ownership once and renders Edit + Remove for the contributor, or Report for
+anybody else. Adding Report as a separate component would have meant a second
+identical ownership check, which is the duplication that component's own doc comment
+argued against when Edit and Remove were first put together.
+
+Signed out, the probe 401s and both branches render nothing — reporting needs a
+session anyway, so a signed-out reader is given no control rather than one that would
+fail when pressed.
+
+## The moderation queues are on `/moderation`
+
+One server component fetching both queues in parallel and rendering two sections,
+each paginating on its own keyset. Merging them would mean a cursor spanning two
+unrelated orderings.
 
 There is **no role to check on the way in** — nothing in this API exposes the caller's
-own role — so the page asks the queue and renders what it is told. A `403` becomes a
+own role — so the page asks the queues and renders what it is told. A `403` becomes a
 plain "you do not have access to this page" rather than a throw, because "you are not
 an admin" is a state to render and not a fault; throwing would take the page to the
 error boundary and tell a signed-in reader their session broke.
@@ -123,22 +152,26 @@ error boundary and tell a signed-in reader their session broke.
 `force-dynamic`, because the whole page is per-admin and a cached render would be
 another admin's queue.
 
-Removal uses the **existing** `DELETE /resources/:id/comments/:id` route — an admin
-removing somebody else's comment was already permitted, and this page only supplies
-the queue that says where to look. There is no separate moderation delete.
+Removal uses the **existing** `DELETE /resources/:id` and
+`DELETE /resources/:id/comments/:id` routes — an admin could already call both. This
+page only supplies the queue that says where to look. There is no separate moderation
+delete.
 
-`remove` takes the whole row rather than a bare comment id, because the queue spans
-resources and the delete route is nested: there is no single `resourceId` to read off
-the list.
+The comment queue's `remove` takes the whole row rather than a bare comment id,
+because the queue spans resources and the delete route is nested: there is no single
+`resourceId` to read off the list.
 
-Removing drops **every** row for that comment. The backend cascades its reports away,
-so leaving the other rows would show a moderator entries they can do nothing about.
+Both queues drop **every** row for a removed thing. The backend cascades its reports
+away, so leaving the others would show a moderator entries they can do nothing about.
 
-The comment body is rendered **in full** here, unlike the parent quote in the thread. A
-moderator has to read the thing before deciding about it, and there is no reply to bury.
+The resource queue shows the title, the hostname, and the `why` in full. A moderator is
+judging the reasoning as much as the link, and there is nothing below it to bury. Its
+byline reads **"Shared anonymously"** where the contribution was anonymous — the
+backend redacts it on purpose, and a moderator does not need a name to decide a link
+is spam.
 
-`reportCount` gets a filled badge above one and an outline badge at one — one report
-is a hunch, several is a pattern, and that is the number being read first.
+`reportCount` gets a filled badge above one and an outline badge at one — one report is
+a hunch, several is a pattern, and that is the number being read first.
 
 ## Dates go through `formatDate`
 

@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import type React from "react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-
+import { ReportDialog, ReportTrigger } from "@/components/report-dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,32 +20,46 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { getApiErrorMessage } from "@/lib/api-error";
-import { deleteResource, isMyResource } from "@/lib/resources-api";
+import {
+  deleteResource,
+  isMyResource,
+  reportResource,
+} from "@/lib/resources-api";
 
 /**
- * The two actions a contributor gets on their own resource: Edit, and Remove.
+ * The actions a reader gets on a resource: the contributor's Edit and Remove, or a
+ * Report control for anybody else.
  *
- * Shown only once the backend confirms the resource is theirs. The detail page is
- * server-rendered, and a resource shared anonymously comes back with its
- * contributor withheld — so the page cannot tell from the payload whether it
- * owns it. Asking costs one small authenticated call, and until it answers
- * nothing renders, so a delete button never flashes on someone else's post.
+ * Shown only once the backend confirms who they are. The detail page is
+ * server-rendered, and a resource shared anonymously comes back with its contributor
+ * withheld — so the page cannot tell from the payload whether it owns it. Asking
+ * costs one small authenticated call, and until it answers nothing renders, so a
+ * delete button never flashes on someone else's post.
  *
- * Both live in one component deliberately. Splitting them would mean two
- * identical ownership checks, and one round trip answers the question for both.
+ * One probe serves both branches on purpose. A separate report component would need
+ * the same ownership question answered a second time, and two round trips to ask one
+ * thing is the kind of duplication that later reads as two sources of truth.
  *
  * There is no "remove my name" action. Anonymity already does that *and* leaves
  * the resource editable, so detaching the contributor would only take away the
  * author's ability to fix a typo. The dialog says so, which is why the middle
  * path does not need a button of its own.
+ *
+ * Report is the *other* branch rather than a fourth button. The backend refuses a
+ * report on your own contribution, so offering one would be offering something that
+ * cannot succeed — and if somebody does agree with a report about their own post,
+ * `Remove` is the correct and much stronger answer.
  */
-export function ResourceOwnerActions({
+export function ResourceActions({
   resourceId,
   title,
+  why,
 }: {
   resourceId: string;
   /** Named in the dialog, so the confirmation is about this resource. */
   title: string;
+  /** Quoted in the report dialog, so nobody flags the wrong post by accident. */
+  why: string;
 }) {
   const router = useRouter();
   const [isMine, setIsMine] = useState(false);
@@ -56,7 +70,9 @@ export function ResourceOwnerActions({
     let cancelled = false;
 
     // A signed-out reader gets a 401 here, which is expected rather than an
-    // error worth surfacing — it just means there is nothing to show.
+    // error worth surfacing — it just means there is nothing to show. Reporting needs
+    // a session anyway, so a signed-out reader is given nothing rather than a
+    // control that would 401.
     isMyResource(resourceId)
       .then((mine) => {
         if (!cancelled) setIsMine(mine);
@@ -94,7 +110,18 @@ export function ResourceOwnerActions({
     }
   }
 
-  if (!isMine) return null;
+  if (!isMine) {
+    return (
+      <ReportDialog
+        body={why}
+        onReport={(reason) => reportResource(resourceId, reason)}
+        targetTitle={title}
+        what="contribution"
+      >
+        <ReportTrigger />
+      </ReportDialog>
+    );
+  }
 
   return (
     <div className="ml-auto flex items-center gap-1">
