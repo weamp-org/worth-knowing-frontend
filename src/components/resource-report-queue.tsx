@@ -1,9 +1,21 @@
 "use client";
 
+import { CheckIcon } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getApiErrorMessage } from "@/lib/api-error";
@@ -12,7 +24,11 @@ import {
   type ResourceReport,
 } from "@/lib/comment-types";
 import { formatDate, getHostname } from "@/lib/format";
-import { deleteResource, listResourceReports } from "@/lib/resources-api";
+import {
+  deleteResource,
+  dismissResourceReport,
+  listResourceReports,
+} from "@/lib/resources-api";
 
 /**
  * The resource report queue: contributions people have flagged.
@@ -24,10 +40,18 @@ import { deleteResource, listResourceReports } from "@/lib/resources-api";
  * on the backend.
  *
  * **No reporter is shown**, because the backend does not send one. Nothing here is
- * shaped to display a name of whoever flagged something.
+ * shaped to display a name of whoever flagged something, and an anonymously shared
+ * contribution stays redacted — see the byline below.
  *
- * Removal reuses the ordinary `DELETE /resources/:id`, which an admin could already
- * call. What this page adds is the queue saying where to look.
+ * Two actions per row, and the distinction is the point:
+ *
+ * - **Remove** takes the contribution off the site for everyone.
+ * - **Keep it, close the reports** closes the reports and leaves it.
+ *
+ * The second one matters more here than for comments. `BROKEN_LINK` and
+ * `WRONG_RESOURCE` are usually a fix rather than a deletion, and a carefully written
+ * `why` for a link that has since died is worth repairing rather than throwing away.
+ * Without a non-destructive action the queue can only be cleared by deleting.
  */
 export function ResourceReportQueue({
   initialPage,
@@ -37,7 +61,7 @@ export function ResourceReportQueue({
   const [reports, setReports] = useState<ResourceReport[]>(initialPage.items);
   const [nextCursor, setNextCursor] = useState(initialPage.nextCursor);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [removingId, setRemovingId] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function loadMore() {
@@ -58,29 +82,39 @@ export function ResourceReportQueue({
     }
   }
 
-  /**
-   * Removes a contribution and drops every row that pointed at it.
-   *
-   * Every row, not just this one: the backend cascades a deleted resource's reports
-   * away, so leaving the others would show a moderator entries they can do nothing
-   * about.
-   */
-  async function remove(resourceId: string) {
-    if (removingId) return;
+  function forget(resourceId: string) {
+    setReports((current) =>
+      current.filter((r) => r.resource.id !== resourceId),
+    );
+  }
 
-    setRemovingId(resourceId);
+  async function dismiss(resourceId: string) {
+    if (busyId) return;
+
+    setBusyId(resourceId);
+
+    try {
+      await dismissResourceReport(resourceId);
+      forget(resourceId);
+      toast.success("Reports closed.");
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, "Could not close those reports."));
+      setBusyId(null);
+    }
+  }
+
+  async function remove(resourceId: string) {
+    if (busyId) return;
+
+    setBusyId(resourceId);
 
     try {
       await deleteResource(resourceId);
-
-      setReports((current) =>
-        current.filter((report) => report.resource.id !== resourceId),
-      );
+      forget(resourceId);
       toast.success("Contribution removed.");
     } catch (error) {
       toast.error(getApiErrorMessage(error, "Could not remove that resource."));
-    } finally {
-      setRemovingId(null);
+      setBusyId(null);
     }
   }
 
@@ -91,88 +125,145 @@ export function ResourceReportQueue({
   return (
     <div>
       <ul className="flex flex-col divide-y divide-border">
-        {reports.map((report) => (
-          <li key={report.id} className="flex flex-col gap-3 py-6">
-            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-              {/* The number a moderator reads first: how many people thought this was
-                  worth flagging. */}
-              <Badge variant={report.reportCount > 1 ? "secondary" : "outline"}>
-                {report.reportCount}{" "}
-                {report.reportCount === 1 ? "report" : "reports"}
-              </Badge>
+        {reports.map((report) => {
+          const resourceId = report.resource.id;
+          const isBusy = busyId === resourceId;
 
-              <span className="font-medium text-foreground">
-                {/* Anonymity survives into this queue. The backend redacts it, and a
-                    moderator does not need a name to decide a link is spam. */}
-                {report.resource.contributor?.name ??
-                  (report.resource.isAnonymous
-                    ? "Shared anonymously"
-                    : "Removed")}
-              </span>
+          return (
+            <li key={report.id} className="flex flex-col gap-3 py-6">
+              <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                {/* The number a moderator reads first: how many people thought this was
+                    worth flagging. */}
+                <Badge
+                  variant={report.reportCount > 1 ? "secondary" : "outline"}
+                >
+                  {report.reportCount}{" "}
+                  {report.reportCount === 1 ? "report" : "reports"}
+                </Badge>
 
-              <time dateTime={report.createdAt}>
-                reported {formatDate(report.createdAt)}
-              </time>
-            </div>
+                <span className="font-medium text-foreground">
+                  {/* Anonymity survives into this queue. The backend redacts it, and a
+                      moderator does not need a name to decide a link is spam. */}
+                  {report.resource.contributor?.name ??
+                    (report.resource.isAnonymous
+                      ? "Shared anonymously"
+                      : "Removed")}
+                </span>
 
-            <div className="flex flex-col gap-1">
-              {/* The title and host, because a moderator judging a link needs to know
-                  where it goes before they open it. */}
-              <a
-                href={report.resource.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-medium hover:underline"
-              >
-                {report.resource.title}
-              </a>
-              <span className="text-xs text-muted-foreground">
-                {getHostname(report.resource.url)}
-              </span>
-            </div>
+                <time dateTime={report.createdAt}>
+                  reported {formatDate(report.createdAt)}
+                </time>
+              </div>
 
-            {/* The `why` in full. A moderator is judging the reasoning as much as the
-                link, and there is nothing below it to bury. */}
-            <p className="text-sm leading-relaxed whitespace-pre-wrap">
-              {report.resource.why}
-            </p>
+              <div className="flex flex-col gap-1">
+                {/* The title and host, because judging a link means knowing where it
+                    goes before opening it. */}
+                <a
+                  href={report.resource.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium hover:underline"
+                >
+                  {report.resource.title}
+                </a>
+                <span className="text-xs text-muted-foreground">
+                  {getHostname(report.resource.url)}
+                </span>
+              </div>
 
-            {/* The category as a badge, on every row identically. It is the part a
-                moderator groups by — "12 spam, 3 broken links" is the point of
-                requiring it — and it is what lets a row be triaged without reading
-                the detail underneath. */}
-            <div className="flex flex-wrap items-start gap-2">
-              <Badge variant="secondary">
-                {RESOURCE_REASON_LABELS[report.reason]}
-              </Badge>
+              {/* The `why` in full. A moderator is judging the reasoning as much as the
+                  link, and there is nothing below it to bury. */}
+              <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                {report.resource.why}
+              </p>
 
-              {/* Optional. A `BROKEN_LINK` with no detail is a perfectly good report
-                  and needs no prose to be actionable. */}
-              {report.detail ? (
-                <p className="text-sm text-muted-foreground">{report.detail}</p>
-              ) : null}
-            </div>
+              {/* The category as a badge, on every row identically. That is the whole
+                  reason it is required: it is the part a moderator groups by, and it is
+                  what lets a row be triaged without reading the detail underneath. */}
+              <div className="flex flex-wrap items-start gap-2">
+                <Badge variant="secondary">
+                  {RESOURCE_REASON_LABELS[report.reason]}
+                </Badge>
 
-            <div className="flex flex-wrap items-center gap-2">
-              <Button
-                size="sm"
-                variant="destructive"
-                onClick={() => remove(report.resource.id)}
-                disabled={removingId !== null}
-              >
-                {removingId === report.resource.id
-                  ? "Removing…"
-                  : "Remove contribution"}
-              </Button>
+                {report.detail ? (
+                  <p className="text-sm text-muted-foreground">
+                    {report.detail}
+                  </p>
+                ) : null}
+              </div>
 
-              {/* The page it was on, with its discussion. A report without context is
-                  a title and a date. */}
-              <Button size="sm" variant="ghost" asChild>
-                <Link href={`/resources/${report.resource.id}`}>View page</Link>
-              </Button>
-            </div>
-          </li>
-        ))}
+              <div className="flex flex-wrap items-center gap-2">
+                {/* Removal is permanent for everybody and takes the `why` with it, so
+                    it asks — the same treatment a contributor's own delete gets on
+                    the resource page. */}
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      disabled={busyId !== null}
+                    >
+                      Remove contribution
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>
+                        Remove this contribution?
+                      </AlertDialogTitle>
+                      <AlertDialogDescription>
+                        <span className="font-medium text-foreground">
+                          {report.resource.title}
+                        </span>{" "}
+                        and the explanation behind it will be removed for
+                        everyone. This cannot be undone.
+                        <br />
+                        <br />
+                        If the only problem is the link, close the reports
+                        instead and keep it.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel disabled={isBusy}>
+                        Keep it
+                      </AlertDialogCancel>
+                      <AlertDialogAction
+                        variant="destructive"
+                        disabled={isBusy}
+                        onClick={(event) => {
+                          // Radix closes on press; suppressing keeps the dialog open
+                          // for the length of the request so a failure is retryable.
+                          event.preventDefault();
+                          void remove(resourceId);
+                        }}
+                      >
+                        {isBusy ? "Removing…" : "Remove for everyone"}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+
+                {/* The non-destructive outcome, and the answer most reports actually
+                    want — especially BROKEN_LINK, which is usually a fix. */}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => dismiss(resourceId)}
+                  disabled={busyId !== null}
+                >
+                  <CheckIcon aria-hidden="true" />
+                  {isBusy ? "Closing…" : "Keep it, close reports"}
+                </Button>
+
+                {/* The page it was on, with its discussion. A report without context is
+                    a title and a date. */}
+                <Button size="sm" variant="ghost" asChild>
+                  <Link href={`/resources/${resourceId}`}>View page</Link>
+                </Button>
+              </div>
+            </li>
+          );
+        })}
       </ul>
 
       {error ? (

@@ -20,6 +20,8 @@ contribution it is about. The moderation queue is the one separate route, at
 | `POST /resources/:id/report` | session | `ReportDialog`, from `ResourceActions` |
 | `GET /comment-reports` | **admin** | `/moderation`, server-side |
 | `GET /resource-reports` | **admin** | `/moderation`, server-side |
+| `POST /comment-reports/:commentId/dismiss` | **admin** | "Keep it, close reports" |
+| `POST /resource-reports/:resourceId/dismiss` | **admin** | "Keep it, close reports" |
 
 ## One client component, and why
 
@@ -191,6 +193,41 @@ intent visible.
 That field exists because of this page's other consumer, the header. It is not a
 second source of truth — the queue routes still enforce `ADMIN` with `@Roles`
 whatever the profile says.
+
+## Dismissing a report
+
+Each row offers **two** actions, and the distinction between them is the point:
+
+- **Remove** takes the comment or contribution off the site, permanently.
+- **Keep it, close reports** closes every report against it and leaves it in place.
+
+Without the second one, the only way to work through the queue is to delete things —
+which quietly makes removal the answer to every report, including the ones where removal
+is wrong. A queue a moderator cannot clear is a queue they stop trusting: it grows
+forever, or they learn to ignore it, and both make the *next* real report less likely to
+be caught.
+
+This matters more for contributions than for comments. `BROKEN_LINK` and
+`WRONG_RESOURCE` are usually a **fix**, and a carefully written `why` for a link that
+has since died is worth repairing rather than throwing away.
+
+**Dismiss is the non-destructive action and it is not visually de-emphasised into
+invisibility** — it sits next to Remove as an outlined button, with a tick rather than
+a flag. Removal is destructive and destructive controls are styled as such; dismissing
+is a decision, not a deletion.
+
+Both drop **every** row for that thing. A dismissal closes all reports at once, and a
+deletion cascades them away server-side, so leaving the others would show a moderator
+entries they can do nothing about.
+
+**Removal confirms, in both queues.** It is permanent, it is for everybody, and it takes
+the `why` with it — so it asks first, matching the confirmation a contributor's own
+delete gets. The dialog on the contribution queue says outright: *"If the only problem
+is the link, close the reports instead and keep it."* That sentence is the whole reason
+dismissal exists, so it belongs where the decision is made.
+
+Neither action offers a report's author any feedback, or the thing they reported any
+visible change beyond its own removal. That is unchanged, and deliberate.
 
 ## Reaching the page: a header link, for admins only
 

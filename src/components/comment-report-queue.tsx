@@ -1,31 +1,51 @@
 "use client";
 
+import { CheckIcon, FlagIcon } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { COMMENT_REASON_LABELS, type CommentReport } from "@/lib/comment-types";
-import { deleteComment, listCommentReports } from "@/lib/comments-api";
+import { deleteComment, dismissCommentReport } from "@/lib/comments-api";
 import { formatDate } from "@/lib/format";
 
 /**
- * The moderation queue: comments people have reported.
+ * The comment report queue.
  *
- * One row per report, not per reported comment, so a comment several people flagged
- * occupies several rows. `reportCount` is what keeps that readable — one report is a
- * hunch, five is a pattern — and the backend ordered it that way deliberately rather
- * than grouping, because grouping means paging over an aggregate that changes while
- * you page. See `docs/comments.md` on the backend.
+ * One row per report, so a comment several people flagged occupies several rows.
+ * `reportCount` keeps that readable — one report is a hunch, five is a pattern — and
+ * the backend ordered it that way deliberately rather than grouping, because grouping
+ * means paging over an aggregate that changes while you page. See `docs/comments.md`
+ * on the backend.
  *
  * **No reporter is shown**, because the backend does not send one. Nothing here is
  * shaped to display a name of whoever flagged something.
  *
- * Removing uses the same `DELETE .../comments/:id` a comment's author uses. An admin
- * removing somebody else's comment is the moderation path, and it was always there;
- * what this page adds is the queue telling an admin where to look.
+ * Two actions per row, and the distinction between them is the point:
+ *
+ * - **Remove** takes the comment off the site.
+ * - **Dismiss** closes the reports and leaves it. Without the second one, the only way
+ *   to work through the queue is to delete things — which quietly makes removal the
+ *   answer to every report, including the ones where removal is wrong. A queue a
+ *   moderator cannot clear is a queue they stop trusting.
+ *
+ * Both drop **every** row for the comment. The backend cascades a deleted comment's
+ * reports away, and a dismissal closes all of them at once, so leaving the others
+ * would show a moderator entries they can do nothing about.
  */
 export function CommentReportQueue({
   initialPage,
@@ -35,7 +55,7 @@ export function CommentReportQueue({
   const [reports, setReports] = useState<CommentReport[]>(initialPage.items);
   const [nextCursor, setNextCursor] = useState(initialPage.nextCursor);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [removingId, setRemovingId] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function loadMore() {
@@ -45,6 +65,7 @@ export function CommentReportQueue({
     setError(null);
 
     try {
+      const { listCommentReports } = await import("@/lib/comments-api");
       const page = await listCommentReports({ cursor: nextCursor });
 
       setReports((current) => [...current, ...page.items]);
@@ -56,120 +77,179 @@ export function CommentReportQueue({
     }
   }
 
-  /**
-   * Removes a comment and drops every row that pointed at it.
-   *
-   * Takes the whole row rather than a bare id, because the delete route is nested
-   * under the resource and **the queue spans resources** — it is not one thread, so
-   * there is no single `resourceId` to take from the first row.
-   *
-   * Drops every row, not just this one: a comment five people reported is five rows
-   * here, and after a removal the other four refer to something that no longer
-   * exists — the backend cascades its reports away, so leaving them would show a
-   * moderator four rows they can do nothing about.
-   */
-  async function remove(report: CommentReport) {
-    if (removingId) return;
+  function forget(commentId: string) {
+    setReports((current) => current.filter((r) => r.comment.id !== commentId));
+  }
 
-    setRemovingId(report.comment.id);
+  async function dismiss(commentId: string) {
+    if (busyId) return;
+
+    setBusyId(commentId);
 
     try {
-      await deleteComment(report.comment.resourceId, report.comment.id);
-
-      setReports((current) =>
-        current.filter((item) => item.comment.id !== report.comment.id),
+      await dismissCommentReport(commentId);
+      forget(commentId);
+      toast.success("Reports closed.");
+    } catch (error) {
+      toast.error(
+        getApiErrorMessage(error, "Could not dismiss those reports."),
       );
+      setBusyId(null);
+    }
+  }
+
+  async function remove(commentId: string) {
+    if (busyId) return;
+
+    setBusyId(commentId);
+
+    try {
+      // The delete route is nested under the resource and the queue spans resources,
+      // so each row's own `resourceId` is used rather than one off the list.
+      const report = reports.find((r) => r.comment.id === commentId);
+
+      if (!report) {
+        setBusyId(null);
+        return;
+      }
+
+      await deleteComment(report.comment.resourceId, commentId);
+      forget(commentId);
       toast.success("Comment removed.");
     } catch (error) {
       toast.error(getApiErrorMessage(error, "Could not remove that comment."));
-    } finally {
-      setRemovingId(null);
+      setBusyId(null);
     }
   }
 
   if (reports.length === 0) {
-    return (
-      <p className="text-sm text-muted-foreground">
-        Nothing has been reported.
-      </p>
-    );
+    return <p className="text-sm text-muted-foreground">None.</p>;
   }
 
   return (
     <div>
       <ul className="flex flex-col divide-y divide-border">
-        {reports.map((report) => (
-          <li key={report.id} className="flex flex-col gap-3 py-6">
-            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-              {/* The one number a moderator reads first: how many people thought this
-                  was worth flagging. */}
-              <Badge variant={report.reportCount > 1 ? "secondary" : "outline"}>
-                {report.reportCount}{" "}
-                {report.reportCount === 1 ? "report" : "reports"}
-              </Badge>
+        {reports.map((report) => {
+          const commentId = report.comment.id;
+          const isBusy = busyId === commentId;
 
-              <span className="font-medium text-foreground">
-                {report.comment.author?.name ?? "Removed"}
-              </span>
+          return (
+            <li key={report.id} className="flex flex-col gap-3 py-6">
+              <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                <Badge
+                  variant={report.reportCount > 1 ? "secondary" : "outline"}
+                >
+                  {report.reportCount}{" "}
+                  {report.reportCount === 1 ? "report" : "reports"}
+                </Badge>
 
-              <time dateTime={report.comment.createdAt}>
-                {formatDate(report.comment.createdAt)}
-              </time>
+                {/* Null author means a deleted account — the comment outlives its
+                    author. Worded as removed rather than anonymous, because the backend
+                    keeps the two distinct. */}
+                <span className="font-medium text-foreground">
+                  {report.comment.author?.name ?? "Removed"}
+                </span>
 
-              <time dateTime={report.createdAt}>
-                reported {formatDate(report.createdAt)}
-              </time>
-            </div>
+                <time dateTime={report.comment.createdAt}>
+                  {formatDate(report.comment.createdAt)}
+                </time>
 
-            {/* The comment's own text, in full. A moderator has to read the thing
-                before deciding about it, so this is not truncated the way a parent
-                quote is in the thread. */}
-            <p className="text-sm leading-relaxed whitespace-pre-wrap">
-              {report.comment.body}
-            </p>
+                <time dateTime={report.createdAt}>
+                  reported {formatDate(report.createdAt)}
+                </time>
+              </div>
 
-            {/* A report with no reason is common and not suspicious — the reason is
-                optional on purpose, so an empty one is shown as its absence rather
-                than hidden. */}
-            {/* The category as a badge rather than a sentence. It is the part a
-                moderator groups by, and showing it identically on every row is what
-                makes the queue scannable — the free text underneath is the part that
-                has to be read one at a time. */}
-            <div className="flex flex-wrap items-start gap-2">
-              <Badge variant="secondary">
-                {COMMENT_REASON_LABELS[report.reason]}
-              </Badge>
+              <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                {report.comment.body}
+              </p>
 
-              {/* Optional, and shown as its absence rather than hidden: no detail is
-                  common and not suspicious, since the category alone is enough to
-                  file. */}
-              {report.detail ? (
-                <p className="text-sm text-muted-foreground">{report.detail}</p>
-              ) : null}
-            </div>
+              {/* The category as a badge, on every row identically. It is the part a
+                  moderator groups by, and showing it the same way every time is what
+                  makes the queue scannable. */}
+              <div className="flex flex-wrap items-start gap-2">
+                <Badge variant="secondary">
+                  {COMMENT_REASON_LABELS[report.reason]}
+                </Badge>
 
-            <div className="flex flex-wrap items-center gap-2">
-              <Button
-                size="sm"
-                variant="destructive"
-                onClick={() => remove(report)}
-                disabled={removingId !== null}
-              >
-                {removingId === report.comment.id
-                  ? "Removing…"
-                  : "Remove comment"}
-              </Button>
+                {report.detail ? (
+                  <p className="text-sm text-muted-foreground">
+                    {report.detail}
+                  </p>
+                ) : null}
+              </div>
 
-              {/* The thread it was on, because a report without its context is a
-                  comment and a date. */}
-              <Button size="sm" variant="ghost" asChild>
-                <Link href={`/resources/${report.comment.resourceId}`}>
-                  View thread
-                </Link>
-              </Button>
-            </div>
-          </li>
-        ))}
+              <div className="flex flex-wrap items-center gap-2">
+                {/* Removal is permanent and takes the comment with it, so it asks —
+                    the same treatment it gets on the thread itself. */}
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      disabled={busyId !== null}
+                    >
+                      <FlagIcon aria-hidden="true" />
+                      Remove comment
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Remove this comment?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        It will be removed for everyone, and this cannot be
+                        undone.
+                        <br />
+                        <br />
+                        Replies to it are kept and simply lose the quote above
+                        them. If there is nothing wrong with it, close the
+                        reports instead.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel disabled={isBusy}>
+                        Keep it
+                      </AlertDialogCancel>
+                      <AlertDialogAction
+                        variant="destructive"
+                        disabled={isBusy}
+                        onClick={(event) => {
+                          // Radix closes on press; suppressing keeps the dialog open
+                          // for the length of the request so a failure is retryable.
+                          event.preventDefault();
+                          void remove(commentId);
+                        }}
+                      >
+                        {isBusy ? "Removing…" : "Remove for everyone"}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+
+                {/*
+                  Dismiss is the *non-destructive* outcome, so it leads here rather
+                  than trailing after Remove: it is the answer most reports actually
+                  want, and putting it last would make "delete it" the default read of
+                  the row.
+                */}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => dismiss(commentId)}
+                  disabled={busyId !== null}
+                >
+                  <CheckIcon aria-hidden="true" />
+                  {isBusy ? "Closing…" : "Keep, close reports"}
+                </Button>
+
+                <Button size="sm" variant="ghost" asChild>
+                  <Link href={`/resources/${report.comment.resourceId}`}>
+                    View thread
+                  </Link>
+                </Button>
+              </div>
+            </li>
+          );
+        })}
       </ul>
 
       {error ? (

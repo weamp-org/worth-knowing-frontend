@@ -155,6 +155,21 @@ export async function reportResource(
 }
 
 /**
+ * Dismisses every report on a contribution, without removing it.
+ *
+ * "I looked at this and it stays". Worth having as its own action because a
+ * `BROKEN_LINK` report on a carefully written `why` is often a fix rather than a
+ * deletion, and without this the only way to close a report out was to delete the
+ * thing — which makes removal the answer to every report.
+ *
+ * Idempotent and `204`. Takes the **resource** id, not a report id, for the same
+ * reason as the comment queue: one decision closes all the rows.
+ */
+export async function dismissResourceReport(resourceId: string): Promise<void> {
+  await api.post(`/resource-reports/${encodeURIComponent(resourceId)}/dismiss`);
+}
+
+/**
  * The resource moderation queue. Admin only — the backend refuses anybody else with
  * a 403, which `getResourceReportsForViewer` turns into rendered output.
  *

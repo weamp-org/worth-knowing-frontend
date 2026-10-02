@@ -138,6 +138,22 @@ export async function listCommentReports(
 }
 
 /**
+ * Dismisses every report on a comment, without removing it.
+ *
+ * The counterpart to {@link deleteComment} for a moderator: "I looked at this and it
+ * stays". Without it the only way to work through the queue is to delete things, which
+ * quietly makes removal the answer to every report — including the ones where removal
+ * is wrong.
+ *
+ * Idempotent and `204`. Takes the **comment** id rather than a report id, because a
+ * comment several people reported is several rows and one decision has to close all of
+ * them.
+ */
+export async function dismissCommentReport(commentId: string): Promise<void> {
+  await api.post(`/comment-reports/${encodeURIComponent(commentId)}/dismiss`);
+}
+
+/**
  * Removes a comment. Author or admin only.
  *
  * `204` with no body, so there is nothing to return. Callers drop the row locally.
