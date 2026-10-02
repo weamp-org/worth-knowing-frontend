@@ -3,7 +3,7 @@
 import { PlusIcon, XIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 
-import { Badge } from "@/components/ui/badge";
+import { TagBadge } from "@/components/tag-badge";
 import { Input } from "@/components/ui/input";
 import type { TagSearchResult } from "@/lib/resource-types";
 import { MAX_TAG_LENGTH } from "@/lib/resource-types";
@@ -171,8 +171,13 @@ export function TagInput({
         <ul className="flex flex-wrap items-center gap-2">
           {value.map((tag) => (
             <li key={tag}>
-              <Badge variant="secondary" className="gap-1 py-0.5 pr-1 pl-2">
-                {tag}
+              {/* The chip is the shared one, so a tag looks like a tag here as it
+                  does everywhere else. The button needs room the read-only chips
+                  do not, hence the extra right padding. */}
+              <TagBadge
+                tag={{ name: tag, slug: tag }}
+                className="gap-1 pr-1 pl-2"
+              >
                 <button
                   type="button"
                   onClick={() =>
@@ -183,7 +188,7 @@ export function TagInput({
                 >
                   <XIcon />
                 </button>
-              </Badge>
+              </TagBadge>
             </li>
           ))}
         </ul>

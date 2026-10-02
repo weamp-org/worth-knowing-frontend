@@ -143,6 +143,40 @@ input, which points at the active row with `aria-activedescendant`.
 A failed suggestion lookup is swallowed. Free text has always worked, so a network
 blip should not turn tagging into a dead end.
 
+### One chip, four places
+
+Every tag on screen is `TagBadge` in `src/components/tag-badge.tsx` — the feed's
+filter nav, a card in the feed, the footer of a resource, and the removable chips
+in the share form. Use it rather than reaching for `Badge` directly.
+
+It is worth knowing **why**, because the reason is not "consistency, nice".
+
+`Badge` in `ui/badge.tsx` is a `radix-nova` *label* style: `rounded-none`,
+`border-0`, `bg-transparent`, `px-0 py-0`, `text-[0.625rem] uppercase
+tracking-widest`. None of that is a chip, and a tag rendered with it alone
+displays as 10px grey text — indistinguishable from the byline next to it, and
+not obviously a link. `TagBadge` layers on `rounded-full border px-2 py-0.5
+text-xs` to turn it into something that reads as a tag.
+
+It also drops `uppercase` and `tracking-widest`. Those are right for the system's
+own labels (resource type, access type) and wrong for a tag name, which is
+vocabulary the contributor typed — `MACHINE LEARNING` misrepresents
+`machine learning`. Resource-type and access-type badges should keep using
+`Badge` directly; the two are not the same kind of thing.
+
+The filter nav needed a real active state and `Badge` cannot express one. Its
+`secondary` and `ghost` variants resolve to `text-muted-foreground` with
+`hover:text-foreground`, and `asChild` puts both on the same `<a>`, so the
+selected filter looked exactly like the unselected ones. `TagBadge`'s `active`
+prop switches to `bg-secondary text-secondary-foreground` with a transparent
+border. `href` overrides the filter URL, which is how the nav's "Everything"
+reset link wears the same shape.
+
+**Do not pass a callback to it.** `children` replaces the name-plus-link, which
+is how the share form's remove button gets in without `TagBadge` becoming a client
+component — three of its four call sites are server-rendered and could not import
+one.
+
 ## Anonymity
 
 A contributor can share anonymously, with a standing preference in settings and

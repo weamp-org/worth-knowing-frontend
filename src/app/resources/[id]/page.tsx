@@ -1,10 +1,10 @@
 import { auth } from "@clerk/nextjs/server";
 import type { Metadata } from "next";
-import Link from "next/link";
 import { CollectionPicker } from "@/components/collection-picker";
 import { CommentSection } from "@/components/comment-section";
 import { ResourceActions } from "@/components/resource-actions";
 import { SaveButton } from "@/components/save-button";
+import { TagBadge } from "@/components/tag-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getCachedMyCollections } from "@/lib/collection-queries";
@@ -152,11 +152,7 @@ export default async function ResourcePage({
       <footer className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
         <ContributorByline resource={resource} />
         {resource.tags.map((tag) => (
-          <Badge key={tag.id} variant="ghost" asChild>
-            <Link href={`/?tag=${encodeURIComponent(tag.slug)}`}>
-              {tag.name}
-            </Link>
-          </Badge>
+          <TagBadge key={tag.id} tag={tag} />
         ))}
       </footer>
 

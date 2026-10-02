@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { TagBadge } from "@/components/tag-badge";
 import { Badge } from "@/components/ui/badge";
 import { ContributorByline } from "@/lib/contributor";
 import { formatDate, getHostname } from "@/lib/format";
@@ -50,13 +51,7 @@ export function ResourceCard({ resource }: { resource: Resource }) {
       <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
         <ContributorByline resource={resource} />
         {resource.tags.map((tag) => (
-          // A `#` in a slug starts a fragment, so the slug has to be encoded
-          // rather than dropped into the path as-is.
-          <Badge key={tag.id} variant="ghost" asChild>
-            <Link href={`/?tag=${encodeURIComponent(tag.slug)}`}>
-              {tag.name}
-            </Link>
-          </Badge>
+          <TagBadge key={tag.id} tag={tag} />
         ))}
       </div>
     </article>

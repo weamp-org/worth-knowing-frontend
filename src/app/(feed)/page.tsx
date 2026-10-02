@@ -1,9 +1,8 @@
 import { auth } from "@clerk/nextjs/server";
 import type { Metadata } from "next";
-import Link from "next/link";
 
 import { ResourceFeed } from "@/components/resource-feed";
-import { Badge } from "@/components/ui/badge";
+import { TagBadge } from "@/components/tag-badge";
 import type { TagSearchResult } from "@/lib/resource-types";
 import { listResources, listTags } from "@/lib/resources-api";
 
@@ -76,18 +75,16 @@ function TagFilter({
 
   return (
     <nav aria-label="Filter by tag" className="mt-8 flex flex-wrap gap-2">
-      <Badge variant={activeTag ? "ghost" : "secondary"} asChild>
-        <Link href="/">Everything</Link>
-      </Badge>
+      {/* The reset link shares the tag chip's shape. `activeTag` being undefined
+          is the unfiltered state, so that is when "Everything" is selected —
+          including on a slug that matches no tag, where the empty state says so. */}
+      <TagBadge
+        tag={{ name: "Everything", slug: "" }}
+        active={!activeTag}
+        href="/"
+      />
       {tags.map((tag) => (
-        <Badge
-          key={tag.id}
-          variant={activeTag === tag.slug ? "secondary" : "ghost"}
-          asChild
-        >
-          {/* `#` is legal in a slug and starts a fragment, hence the encoding. */}
-          <Link href={`/?tag=${encodeURIComponent(tag.slug)}`}>{tag.name}</Link>
-        </Badge>
+        <TagBadge key={tag.id} tag={tag} active={activeTag === tag.slug} />
       ))}
     </nav>
   );
