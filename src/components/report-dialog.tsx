@@ -1,7 +1,12 @@
 "use client";
 
 import { FlagIcon } from "lucide-react";
-import { type FormEvent, type ReactNode, useState } from "react";
+import {
+  type ComponentProps,
+  type FormEvent,
+  type ReactNode,
+  useState,
+} from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -19,6 +24,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { MAX_REPORT_DETAIL_LENGTH } from "@/lib/comment-types";
+import { cn } from "@/lib/utils";
 
 /**
  * Flags something to the moderators.
@@ -202,10 +208,33 @@ export function ReportDialog<R extends string>({
   );
 }
 
-/** The trigger every report control uses. */
-export function ReportTrigger() {
+/**
+ * The trigger every report control uses.
+ *
+ * **Forwards its props**, which is load-bearing rather than decorative.
+ * `<DialogTrigger asChild>` hands its `onClick` and its `aria-*`/`data-state`
+ * attributes to whatever child it wraps — as props. A child that does not accept and
+ * spread them silently swallows the click handler, and the button renders inert with
+ * no error anywhere. An earlier version of this declared an `onClick` prop and
+ * forwarded it, which is why it worked; dropping that prop broke the button without
+ * any visible symptom.
+ *
+ * An earlier version also read `onClick?: () => void` and bound it directly. That
+ * happened to work too, but only because it matched the prop Radix happened to send
+ * — naming the rest of `ComponentProps<typeof Button>` is what makes it correct rather
+ * than coincidentally correct.
+ */
+export function ReportTrigger({
+  className,
+  ...props
+}: ComponentProps<typeof Button>) {
   return (
-    <Button size="sm" variant="ghost" className="text-muted-foreground">
+    <Button
+      className={cn("text-muted-foreground", className)}
+      size="sm"
+      variant="ghost"
+      {...props}
+    >
       <FlagIcon aria-hidden="true" />
       Report
     </Button>
