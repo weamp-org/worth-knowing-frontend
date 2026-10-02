@@ -23,7 +23,7 @@ import {
   RESOURCE_REASON_LABELS,
   type ResourceReport,
 } from "@/lib/comment-types";
-import { formatDate, getHostname } from "@/lib/format";
+import { formatDateTime, getHostname } from "@/lib/format";
 import {
   deleteResource,
   dismissResourceReport,
@@ -184,8 +184,11 @@ export function ResourceReportQueue({
                       : "Removed")}
                 </span>
 
+                {/* With a time, because recency is the question this queue exists to
+                    answer: an hour-old report and a week-old one are different
+                    amounts of work. */}
                 <time dateTime={report.createdAt}>
-                  reported {formatDate(report.createdAt)}
+                  reported {formatDateTime(report.createdAt)}
                 </time>
               </div>
 

@@ -26,7 +26,7 @@ import {
   listCommentReports,
   undismissCommentReport,
 } from "@/lib/comments-api";
-import { formatDate } from "@/lib/format";
+import { formatDateTime } from "@/lib/format";
 
 /**
  * The comment report queue.
@@ -191,12 +191,16 @@ export function CommentReportQueue({
                   {report.comment.author?.name ?? "Removed"}
                 </span>
 
+                {/* Both timestamps carry a time, and that is what makes the pair
+                    readable: a comment posted this morning and flagged this
+                    afternoon is a different situation from one flagged three
+                    weeks after it was written. */}
                 <time dateTime={report.comment.createdAt}>
-                  {formatDate(report.comment.createdAt)}
+                  {formatDateTime(report.comment.createdAt)}
                 </time>
 
                 <time dateTime={report.createdAt}>
-                  reported {formatDate(report.createdAt)}
+                  reported {formatDateTime(report.createdAt)}
                 </time>
               </div>
 
