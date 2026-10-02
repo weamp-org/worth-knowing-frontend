@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getApiErrorMessage } from "@/lib/api-error";
-import type { CommentReport } from "@/lib/comment-types";
+import { COMMENT_REASON_LABELS, type CommentReport } from "@/lib/comment-types";
 import { deleteComment, listCommentReports } from "@/lib/comments-api";
 import { formatDate } from "@/lib/format";
 
@@ -131,15 +131,22 @@ export function CommentReportQueue({
             {/* A report with no reason is common and not suspicious — the reason is
                 optional on purpose, so an empty one is shown as its absence rather
                 than hidden. */}
-            {report.reason ? (
-              <p className="border-l-2 border-border pl-3 text-sm text-muted-foreground">
-                {report.reason}
-              </p>
-            ) : (
-              <p className="text-sm text-muted-foreground italic">
-                No reason given.
-              </p>
-            )}
+            {/* The category as a badge rather than a sentence. It is the part a
+                moderator groups by, and showing it identically on every row is what
+                makes the queue scannable — the free text underneath is the part that
+                has to be read one at a time. */}
+            <div className="flex flex-wrap items-start gap-2">
+              <Badge variant="secondary">
+                {COMMENT_REASON_LABELS[report.reason]}
+              </Badge>
+
+              {/* Optional, and shown as its absence rather than hidden: no detail is
+                  common and not suspicious, since the category alone is enough to
+                  file. */}
+              {report.detail ? (
+                <p className="text-sm text-muted-foreground">{report.detail}</p>
+              ) : null}
+            </div>
 
             <div className="flex flex-wrap items-center gap-2">
               <Button

@@ -1,5 +1,8 @@
 import api from "@/lib/api";
-import type { PaginatedResourceReports } from "@/lib/comment-types";
+import type {
+  PaginatedResourceReports,
+  ResourceReportReason,
+} from "@/lib/comment-types";
 import type {
   PaginatedResources,
   Resource,
@@ -131,18 +134,24 @@ export async function deleteResource(id: string): Promise<Resource> {
  * spirit: a bad link gets shared onward to people who never saw the flag, where a bad
  * comment stays under one page.
  *
+ * `reason` is required — it is what makes a moderator's queue sortable — and `detail`
+ * is optional free text.
+ *
  * `204` with no body, and nothing changes for any reader — including the contributor.
  * The backend refuses a report on your own contribution, so a client should not offer
  * the control on one.
  */
 export async function reportResource(
   id: string,
-  reason?: string,
+  reason: ResourceReportReason,
+  detail?: string,
 ): Promise<void> {
-  await api.post(
-    `/resources/${encodeURIComponent(id)}/report`,
-    reason ? { reason } : {},
-  );
+  await api.post(`/resources/${encodeURIComponent(id)}/report`, {
+    reason,
+    // Omitted rather than sent empty, so the backend stores no detail rather than an
+    // empty string.
+    ...(detail ? { detail } : {}),
+  });
 }
 
 /**

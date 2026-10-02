@@ -116,6 +116,31 @@ silent and unrecoverable.
 state on the reported thing, no marker — only the toast. Showing it would turn a
 quiet signal into a scoreboard, and the backend agrees by writing nothing.
 
+### Nothing in the wording implies removal
+
+It was "Why should this be removed?", which is wrong for a category like
+`BROKEN_LINK` where the honest outcome is usually a fix. And because no report is
+ever shown to anybody but a moderator, that phrasing quietly implied a consequence the
+product does not promise.
+
+The label is now **"What's wrong?"**, and the dialog says plainly that *not everything
+reported gets removed*. A `why` written carefully for a link that 404s is worth
+surfacing; throwing the contribution away would lose something real.
+
+### The category is a radio group, not a select
+
+Four or five options, shown. A dropdown hides the list until it is already open, and
+the point is partly that you can *see* that one of them fits. It also makes "something
+else" visibly the last resort rather than the default.
+
+Nothing is pre-selected. Defaulting to the first option would mean silently filing a
+report as "spam" because that happened to be top of the list, which is worse than one
+deliberate extra click. The submit button is disabled until a category is chosen.
+
+The detail is a `Textarea`, not the single-line input it replaced. A one-line box caps
+what people write — given one, they write one — and the backend has always allowed 500
+characters because a report is a complaint.
+
 ### Report is not offered on your own
 
 The backend refuses both kinds (`400`). For a contribution, `ResourceActions` already
@@ -172,6 +197,13 @@ is spam.
 
 `reportCount` gets a filled badge above one and an outline badge at one — one report is
 a hunch, several is a pattern, and that is the number being read first.
+
+The **category** also renders as a badge, identically on every row. That is the whole
+reason it is required: it is the part a moderator groups by, and showing it the same
+way every time is what makes the queue scannable. The detail sits beside it and is the
+part that has to be read one row at a time. An absent detail is rendered as nothing at
+all rather than as a placeholder — a `BROKEN_LINK` with no prose is a perfectly good
+report and needs no sentence to be actionable.
 
 ## Dates go through `formatDate`
 

@@ -21,6 +21,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { getApiErrorMessage } from "@/lib/api-error";
 import {
+  RESOURCE_REASON_LABELS,
+  RESOURCE_REPORT_REASONS,
+} from "@/lib/comment-types";
+import {
   deleteResource,
   isMyResource,
   reportResource,
@@ -114,7 +118,11 @@ export function ResourceActions({
     return (
       <ReportDialog
         body={why}
-        onReport={(reason) => reportResource(resourceId, reason)}
+        labels={RESOURCE_REASON_LABELS}
+        onReport={(reason, detail) =>
+          reportResource(resourceId, reason, detail)
+        }
+        reasons={RESOURCE_REPORT_REASONS}
         targetTitle={title}
         what="contribution"
       >

@@ -93,13 +93,63 @@ export interface CommentInput {
 }
 
 /**
- * The backend's bound on a report's reason, restated for the form.
+ * The backend's bound on a report's free text, restated for the form.
  *
  * Shared by both report kinds — a contribution and a comment — because the two DTOs
  * carry the same limit for the same reason: a report is a complaint, not a second
  * contribution.
  */
-export const MAX_REPORT_REASON_LENGTH = 500;
+export const MAX_REPORT_DETAIL_LENGTH = 500;
+
+/**
+ * Why somebody flagged a resource. Mirrors `ResourceReportReason`.
+ *
+ * Ordered by **the decision each implies for a moderator**, not by severity, because
+ * that is what makes a queue sortable: SPAM and ABUSE are remove, BROKEN_LINK and
+ * WRONG_RESOURCE are usually a fix, and SOMETHING_ELSE is the escape hatch.
+ */
+export const RESOURCE_REPORT_REASONS = [
+  "SPAM",
+  "ABUSE",
+  "BROKEN_LINK",
+  "WRONG_RESOURCE",
+  "SOMETHING_ELSE",
+] as const;
+
+export type ResourceReportReason = (typeof RESOURCE_REPORT_REASONS)[number];
+
+/**
+ * The wording shown for each resource reason.
+ *
+ * Written as the reporter would describe it rather than as an internal label, because
+ * the reader is choosing from this list rather than filtering a queue by it. `NO
+ * DUPLICATE` on purpose: two people independently sharing one link is this product
+ * working, and a repeat by the same contributor is already refused with a 409.
+ */
+export const RESOURCE_REASON_LABELS: Record<ResourceReportReason, string> = {
+  SPAM: "Spam or advertising",
+  ABUSE: "Abusive or harassing",
+  BROKEN_LINK: "The link is broken or unsafe",
+  WRONG_RESOURCE: "The title and link don’t match",
+  SOMETHING_ELSE: "Something else",
+};
+
+/** Why somebody flagged a comment. Mirrors `CommentReportReason`. */
+export const COMMENT_REPORT_REASONS = [
+  "SPAM",
+  "ABUSE",
+  "OFF_TOPIC",
+  "SOMETHING_ELSE",
+] as const;
+
+export type CommentReportReason = (typeof COMMENT_REPORT_REASONS)[number];
+
+export const COMMENT_REASON_LABELS: Record<CommentReportReason, string> = {
+  SPAM: "Spam or advertising",
+  ABUSE: "Abusive or harassing",
+  OFF_TOPIC: "Not about this resource",
+  SOMETHING_ELSE: "Something else",
+};
 
 /** One row of the admin moderation queue, from `GET /comment-reports`. */
 export interface CommentReport {
@@ -115,8 +165,10 @@ export interface CommentReport {
    * moderator should not have to open every row to tell which is which.
    */
   reportCount: number;
-  /** Empty string when the reporter gave no reason. */
-  reason: string;
+  /** Required. What makes the queue sortable. */
+  reason: CommentReportReason;
+  /** Empty string when the reporter added nothing beyond the category. */
+  detail: string;
   createdAt: string;
 }
 
@@ -144,7 +196,8 @@ export interface ResourceReport {
    */
   resource: Resource;
   reportCount: number;
-  reason: string;
+  reason: ResourceReportReason;
+  detail: string;
   createdAt: string;
 }
 

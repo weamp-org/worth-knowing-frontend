@@ -2,6 +2,7 @@ import api from "@/lib/api";
 import type {
   Comment,
   CommentInput,
+  CommentReportReason,
   PaginatedCommentReports,
   PaginatedComments,
 } from "@/lib/comment-types";
@@ -82,6 +83,9 @@ export async function createComment(
 /**
  * Flags a comment for the moderators.
  *
+ * `reason` is required — it is what makes a moderator's queue sortable — and `detail`
+ * is optional free text.
+ *
  * Idempotent, so it can be fired without checking first. `204` with no body, and
  * **nothing changes for any reader** — the reported comment looks exactly as it did.
  * That is why there is no optimistic state: the only honest thing to render afterwards
@@ -93,13 +97,14 @@ export async function createComment(
 export async function reportComment(
   resourceId: string,
   commentId: string,
-  reason?: string,
+  reason: CommentReportReason,
+  detail?: string,
 ): Promise<void> {
   await api.post(
     `${thread(resourceId)}/${encodeURIComponent(commentId)}/report`,
-    // Omitted rather than sent empty, so the backend stores no reason instead of an
-    // empty one.
-    reason ? { reason } : {},
+    // Detail omitted rather than sent empty, so the backend stores no detail rather
+    // than an empty string. The category is required and always sent.
+    detail ? { reason, detail } : { reason },
   );
 }
 

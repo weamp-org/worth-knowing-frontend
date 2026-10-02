@@ -10,7 +10,7 @@ Next.js 16 frontend for Worth Knowing, with [Clerk](https://clerk.com) authentic
 - **Collections** — Group resources into private-by-default lists; save from any resource, public ones listed on your profile
 - **Saved** — Bookmark any resource in one click, independent of collections; a public save count on every resource
 - **Comments** — A flat, chronological discussion thread per resource with one level of reply, public to read
-- **Reporting** — Flag a contribution or a comment to the moderators; invisible to every reader including its author. Queues at `/moderation`
+- **Reporting** — Flag a contribution or a comment by category, with optional detail; invisible to every reader including its author. Queues at `/moderation`
 - **Forms** — React Hook Form + Zod via the shadcn `Controller` + `Field` pattern
 - **Dark mode** — Light/dark/system toggle via `next-themes`
 - **UI components** — shadcn/ui (radix-sera style) with Tailwind v4

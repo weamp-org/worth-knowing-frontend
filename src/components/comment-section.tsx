@@ -18,7 +18,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { getApiErrorMessage } from "@/lib/api-error";
-import { type Comment, MAX_COMMENT_LENGTH } from "@/lib/comment-types";
+import {
+  COMMENT_REASON_LABELS,
+  COMMENT_REPORT_REASONS,
+  type Comment,
+  MAX_COMMENT_LENGTH,
+} from "@/lib/comment-types";
 import {
   createComment,
   deleteComment,
@@ -409,7 +414,11 @@ function CommentItem({
         {canComment && !comment.isMine ? (
           <ReportDialog
             body={comment.body}
-            onReport={(reason) => reportComment(resourceId, comment.id, reason)}
+            labels={COMMENT_REASON_LABELS}
+            onReport={(reason, detail) =>
+              reportComment(resourceId, comment.id, reason, detail)
+            }
+            reasons={COMMENT_REPORT_REASONS}
             targetTitle={comment.author?.name ?? "A comment"}
             what="comment"
           >

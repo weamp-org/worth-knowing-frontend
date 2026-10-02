@@ -7,7 +7,10 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getApiErrorMessage } from "@/lib/api-error";
-import type { ResourceReport } from "@/lib/comment-types";
+import {
+  RESOURCE_REASON_LABELS,
+  type ResourceReport,
+} from "@/lib/comment-types";
 import { formatDate, getHostname } from "@/lib/format";
 import { deleteResource, listResourceReports } from "@/lib/resources-api";
 
@@ -134,15 +137,21 @@ export function ResourceReportQueue({
               {report.resource.why}
             </p>
 
-            {report.reason ? (
-              <p className="border-l-2 border-border pl-3 text-sm text-muted-foreground">
-                {report.reason}
-              </p>
-            ) : (
-              <p className="text-sm text-muted-foreground italic">
-                No reason given.
-              </p>
-            )}
+            {/* The category as a badge, on every row identically. It is the part a
+                moderator groups by — "12 spam, 3 broken links" is the point of
+                requiring it — and it is what lets a row be triaged without reading
+                the detail underneath. */}
+            <div className="flex flex-wrap items-start gap-2">
+              <Badge variant="secondary">
+                {RESOURCE_REASON_LABELS[report.reason]}
+              </Badge>
+
+              {/* Optional. A `BROKEN_LINK` with no detail is a perfectly good report
+                  and needs no prose to be actionable. */}
+              {report.detail ? (
+                <p className="text-sm text-muted-foreground">{report.detail}</p>
+              ) : null}
+            </div>
 
             <div className="flex flex-wrap items-center gap-2">
               <Button
