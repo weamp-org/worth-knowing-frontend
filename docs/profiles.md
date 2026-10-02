@@ -101,6 +101,31 @@ The same reasoning is behind `isOwner`. The profile response carries no
 identifier to compare against, so the backend decides ownership and the page
 renders an edit link only when that flag is true.
 
+## `role`, on the own read only
+
+`GET /users/me/profile` returns your **own** `role`. The public read
+omits the field entirely — see the backend's [profiles doc](../worth-knowing-backend/docs/profiles.md)
+for why that stays true.
+
+It is optional in `Profile` rather than required, because the same type models both
+reads. Treat a missing `role` as *unknown*, never as `USER`: on your own read the
+backend reports `USER` explicitly rather than omitting it, so a client branching on
+`role === "ADMIN"` never has to tell an absent field from a real answer.
+
+Two consumers, both in `docs/comments.md`:
+
+- `useIsAdmin()` fetches it from the browser and drives the header's **Moderation**
+  item, rendered only for admins.
+- `/moderation` checks it after `auth.protect()` and before fetching any queue.
+
+`useIsAdmin` deliberately does **not** read the role in the root layout. The layout is
+shared by every route, so `auth()` there would make the whole app dynamic — including
+`/contributors`, which prerenders. One small authenticated call per page load is the
+better trade, and the shared Axios instance already carries the token in the browser.
+
+A failure resolves to `false` rather than throwing. This drives a header link, and an
+error boundary over the header would take down the page over a menu item.
+
 ---
 
 ## Two privacy mechanisms, and they are not the same thing

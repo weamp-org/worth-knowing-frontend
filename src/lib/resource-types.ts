@@ -225,7 +225,26 @@ export interface Profile {
    * `GET /users/me/profile`, and false for a signed-out read.
    */
   isOwner: boolean;
+
+  /**
+   * The caller's own role. **Only on `GET /users/me/profile`** — the public read
+   * omits the field entirely, which is why this is optional.
+   *
+   * Your own role, returned to you, so it is not a disclosure. It exists because the
+   * header offers a moderation link only to admins, and because `/moderation` has to
+   * tell "sign in" apart from "not allowed" before it renders either.
+   *
+   * Reported as `USER` rather than omitted, so a client branching on this never has
+   * to tell an absent field apart from a real answer. On a public read the field is
+   * missing — treat that as *unknown*, not as `USER`.
+   */
+  role?: UserRole;
 }
+
+/** Mirrors the backend's `UserRole`. */
+export const USER_ROLES = ["USER", "ADMIN"] as const;
+
+export type UserRole = (typeof USER_ROLES)[number];
 
 /**
  * The bounds the backend enforces, restated so the form can reject input before

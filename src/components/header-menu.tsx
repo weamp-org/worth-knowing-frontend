@@ -5,6 +5,7 @@ import {
   LibraryIcon,
   MenuIcon,
   SettingsIcon,
+  ShieldIcon,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -16,6 +17,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useIsAdmin } from "@/lib/use-is-admin";
 
 /**
  * The signed-in header's secondary destinations, behind one button.
@@ -34,8 +36,15 @@ import {
  *
  * Ordered by how often each is reached for, with Settings last and separated —
  * it is configuration rather than somewhere you go to look at something.
+ *
+ * **Moderation is here, and only for admins.** `/moderation` was reachable only by
+ * typing the URL. The alternatives were worse: no link at all leaves the feature
+ * undiscoverable, and an unconditional link puts a dead end in front of every
+ * signed-in reader on a product that has no other admins yet.
  */
 export function HeaderMenu() {
+  const isAdmin = useIsAdmin();
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -60,6 +69,22 @@ export function HeaderMenu() {
             Collections
           </Link>
         </DropdownMenuItem>
+
+        {/* Absent for everybody else, so the menu carries no dead end. Not
+            `disabled`: a greyed-out Moderation reads as "not allowed" and invites
+            the reader to work out why. */}
+        {isAdmin ? (
+          <>
+            <DropdownMenuSeparator />
+
+            <DropdownMenuItem asChild>
+              <Link href="/moderation">
+                <ShieldIcon aria-hidden="true" />
+                Moderation
+              </Link>
+            </DropdownMenuItem>
+          </>
+        ) : null}
 
         <DropdownMenuSeparator />
 

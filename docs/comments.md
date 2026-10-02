@@ -168,14 +168,50 @@ One server component fetching both queues in parallel and rendering two sections
 each paginating on its own keyset. Merging them would mean a cursor spanning two
 unrelated orderings.
 
-There is **no role to check on the way in** — nothing in this API exposes the caller's
-own role — so the page asks the queues and renders what it is told. A `403` becomes a
-plain "you do not have access to this page" rather than a throw, because "you are not
-an admin" is a state to render and not a fault; throwing would take the page to the
-error boundary and tell a signed-in reader their session broke.
+### Gated twice, in that order
+
+`auth.protect()` first, then the role, then the queues.
+
+The ordering is the fix for a bug this page shipped with. It used to call the queue,
+catch a `403`, and swap the result for an error — which cannot tell "you are not
+signed in" from "you are not allowed". The `401` was never caught, so **a signed-out
+visitor landed on the error boundary** instead of being redirected to sign in.
+`auth.protect()` first sends them to sign in, exactly as `/saved` and `/collections`
+do; the role check then only has one possible answer left.
+
+The "no access" page renders **before** the queues are fetched. The old version spent
+two requests on a page it was about to refuse.
 
 `force-dynamic`, because the whole page is per-admin and a cached render would be
-another admin's queue.
+another admin's queue. `auth.protect()` implies it anyway; stating it keeps the
+intent visible.
+
+### The role comes from `GET /users/me/profile`
+
+That field exists because of this page's other consumer, the header. It is not a
+second source of truth — the queue routes still enforce `ADMIN` with `@Roles`
+whatever the profile says.
+
+## Reaching the page: a header link, for admins only
+
+`HeaderMenu` gained a **Moderation** item, rendered only when
+`useIsAdmin()` is true.
+
+It used to be reachable only by typing the URL. The alternatives were worse: no link
+at all leaves the feature undiscoverable, and an unconditional link puts a dead end
+in front of every signed-in reader on a product that has no other admins yet.
+
+**Absent, not disabled.** A greyed-out Moderation reads as "not allowed" and invites
+the reader to work out why.
+
+`useIsAdmin` fetches `GET /users/me/profile` from the browser rather than reading the
+role in the root layout, and that is deliberate: the layout is shared by every route,
+so `auth()` there would make the whole app dynamic — including `/contributors`, which
+prerenders. One small authenticated call per page load is a much better trade.
+
+A failure resolves to `false` rather than throwing. This drives a header link, and an
+error boundary over the header would take down the page to complain about a menu item.
+`/moderation` gates for itself and is what actually enforces the role.
 
 Removal uses the **existing** `DELETE /resources/:id` and
 `DELETE /resources/:id/comments/:id` routes — an admin could already call both. This
