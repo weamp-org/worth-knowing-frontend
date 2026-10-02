@@ -1,9 +1,20 @@
 "use client";
 
 import { FlagIcon, MessageSquareReplyIcon, Trash2Icon } from "lucide-react";
-import { useState } from "react";
+import { type MouseEvent, useState } from "react";
 import { toast } from "sonner";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -271,6 +282,7 @@ function CommentItem({
 }) {
   const [isReplying, setIsReplying] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
 
   async function remove() {
     if (isDeleting) return;
@@ -284,6 +296,17 @@ function CommentItem({
       toast.error(getApiErrorMessage(error, "Could not remove that comment."));
       setIsDeleting(false);
     }
+  }
+
+  /**
+   * Radix closes the dialog when the action is pressed. Suppressing that keeps it
+   * open for the length of the request, so a failure is retryable rather than
+   * something the author has to re-open the dialog to discover — the same reason
+   * `ResourceOwnerActions` does it.
+   */
+  async function onConfirmRemove(event: MouseEvent) {
+    event.preventDefault();
+    await remove();
   }
 
   return (
@@ -337,17 +360,52 @@ function CommentItem({
 
         {/* The author's own, and only ever the author's: the backend decides `isMine`
             because the response carries no comparable id. An admin's path to remove
-            somebody else's comment is deliberately not offered here. */}
+            somebody else's comment is deliberately not offered here.
+
+            Confirmed, unlike most destructive buttons in a dense list. This is a hard
+            delete — no edit, no undo, and no revision history anywhere in this
+            codebase — and it sits in a row of small ghost buttons next to Reply,
+            which is exactly where a misclick lands. It also matches
+            `ResourceOwnerActions`, which already confirms its delete; one
+            destructive action on a resource page asking and the other not is worse
+            than either choice alone. */}
         {comment.isMine ? (
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={remove}
-            disabled={isDeleting}
-          >
-            <Trash2Icon aria-hidden="true" />
-            {isDeleting ? "Removing…" : "Remove"}
-          </Button>
+          <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
+            <AlertDialogTrigger asChild>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="text-muted-foreground hover:text-destructive"
+              >
+                <Trash2Icon aria-hidden="true" />
+                Remove
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete this comment?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  It will be removed for everyone, and this cannot be undone.
+                  <br />
+                  <br />
+                  The discussion you were part of stays — replies to this
+                  comment are kept and simply lose the quote above them.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel disabled={isDeleting}>
+                  Keep it
+                </AlertDialogCancel>
+                <AlertDialogAction
+                  variant="destructive"
+                  disabled={isDeleting}
+                  onClick={onConfirmRemove}
+                >
+                  {isDeleting ? "Deleting…" : "Delete for everyone"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         ) : null}
 
         {/* Reported by the reader, flagged to a moderator. Never on your own comment —
