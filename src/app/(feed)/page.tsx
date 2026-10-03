@@ -1,5 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import type { Metadata } from "next";
+import Link from "next/link";
 
 import { ResourceFeed } from "@/components/resource-feed";
 import { SearchBox } from "@/components/search-box";
@@ -57,6 +58,25 @@ export default async function Home({
       */}
       <div className="mt-8">
         <SearchBox id="home-search" />
+
+        {/*
+          The way into `/browse` without a query. Submitting an empty box already
+          lands there, so this is a discoverability fix rather than a new route —
+          but a whole page that only exists if you guess the URL, or happen to
+          clear a search box and press enter, is a page most people will never
+          find. Deliberately quiet: this is the fallback for someone who did not
+          know what to search for, not a second thing to do.
+        */}
+        <p className="mt-3 text-sm text-muted-foreground">
+          Not sure what to look for?{" "}
+          <Link
+            href="/browse"
+            className="underline underline-offset-4 hover:text-foreground"
+          >
+            Browse everything
+          </Link>
+          .
+        </p>
       </div>
 
       <TagFilter tags={tags} activeTag={tag} />

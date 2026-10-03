@@ -60,6 +60,23 @@ and the right order for a new query is usually relevance. Keeping a title sort
 across a fresh search would show the matches alphabetically because of a choice
 made for a different question.
 
+### Anything holding state needs a `key` when the URL can change underneath it
+
+`SearchBox` keeps its value in `useState(defaultValue)`. A changed prop does not
+reach it, so "Clear everything" — which navigates to `/browse` and arrives with
+no `q` — left the field still showing a search that was no longer filtering
+anything. It is keyed on `q`, which is what makes it reset.
+
+Keyed on **`q` alone**, not on the whole URL. Keying on everything is the obvious
+move and it is wrong: changing a type filter mid-word would remount the field and
+swallow what was being typed. `q` is the only input that should discard typing,
+and the only one that can arrive from somewhere other than the keyboard.
+
+`ResourceFeed` has the same hazard and the same answer, keyed on
+`browseHref(params)` because *any* filter change invalidates its accumulated
+pages. Neither was caught by the build — both type-check, both compile, and both
+are only wrong once clicked.
+
 ### Relevance is the absence of `sort`
 
 The backend has no `sort=relevance` — relevance is what you get from `q` with no

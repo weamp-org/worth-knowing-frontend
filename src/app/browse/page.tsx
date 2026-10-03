@@ -68,6 +68,20 @@ export default async function BrowsePage({
 
       <div className="mt-8">
         <SearchBox
+          /*
+           * Keyed on the query alone, so the field resets whenever `q` changes —
+           * which is what "Clear everything" does, and which otherwise left the
+           * box still showing a search whose results were no longer filtered by
+           * it. The field holds its value in state, and a changed prop alone does
+           * not reach it.
+           *
+           * Deliberately **not** keyed on the whole URL, which would be the
+           * obvious thing to reach for. Changing a filter mid-word would remount
+           * the field and swallow what was being typed. `q` is the only input that
+           * should discard typing, and the only one that can arrive from somewhere
+           * other than the keyboard.
+           */
+          key={q ?? ""}
           defaultValue={q}
           // Everything except the query itself, so a new search keeps the type,
           // access level and tag the person had already chosen. Dropping them
