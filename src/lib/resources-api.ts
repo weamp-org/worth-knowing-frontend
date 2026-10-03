@@ -4,9 +4,12 @@ import type {
   ResourceReportReason,
 } from "@/lib/comment-types";
 import type {
+  AccessType,
   PaginatedResources,
   Resource,
   ResourceInput,
+  ResourceSort,
+  ResourceType,
   TagSearchResult,
 } from "@/lib/resource-types";
 
@@ -36,6 +39,26 @@ export interface ListResourcesParams {
   /** Opaque cursor from a previous page's `nextCursor`. */
   cursor?: string;
   limit?: number;
+  /**
+   * Free text, matched against titles, tag names and `why`.
+   *
+   * **The cursor changes meaning with this.** Ranking is `(score, id)` rather
+   * than `(createdAt, id)`, so a `nextCursor` from a search is only valid for
+   * another search, and one from the feed is not valid here. Callers that page
+   * must pass `q` on every request or page two is the unfiltered feed.
+   */
+  q?: string;
+  type?: ResourceType;
+  accessType?: AccessType;
+  /**
+   * Omit it for newest first — or for relevance when `q` is present.
+   *
+   * Relevance is the **absence** of `sort`, not a value, so `q` plus `sort` is a
+   * meaningful combination rather than a contradiction: every match, in that
+   * order. There is deliberately no `sort=relevance`; the backend would have no
+   * way to honour it without a `q` to be relevant to.
+   */
+  sort?: ResourceSort;
 }
 
 export async function listResources(
@@ -43,12 +66,18 @@ export async function listResources(
 ): Promise<PaginatedResources> {
   const response = await api.get<PaginatedResources>("/resources", {
     // Send nothing rather than `undefined`, so axios leaves absent params out
-    // of the query string entirely.
+    // of the query string entirely. `q` is included in that rule: an empty
+    // `q` is omitted, which is what makes clearing the box mean "stop searching"
+    // rather than "search for nothing" — the same answer the backend gives.
     params: {
       ...(params.tag ? { tag: params.tag } : {}),
       ...(params.contributor ? { contributor: params.contributor } : {}),
       ...(params.cursor ? { cursor: params.cursor } : {}),
       ...(params.limit ? { limit: params.limit } : {}),
+      ...(params.q ? { q: params.q } : {}),
+      ...(params.type ? { type: params.type } : {}),
+      ...(params.accessType ? { accessType: params.accessType } : {}),
+      ...(params.sort ? { sort: params.sort } : {}),
     },
   });
 

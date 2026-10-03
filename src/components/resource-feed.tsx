@@ -15,7 +15,7 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import type { Resource } from "@/lib/resource-types";
-import { listResources } from "@/lib/resources-api";
+import { type ListResourcesParams, listResources } from "@/lib/resources-api";
 
 /**
  * The feed, and the only part of it that is a client component.
@@ -26,30 +26,34 @@ import { listResources } from "@/lib/resources-api";
  * be a few lines shorter, but it would swap page one for page two, which reads
  * as a bug rather than as pagination.
  *
- * `key` is set by the parent on the active tag, so changing the filter remounts
- * this and drops the accumulated pages instead of showing page two of the
- * previous tag.
+ * `filters` is the single source of what this listing is, and it is re-sent on
+ * every "load more" request. That is the whole reason it is one object rather
+ * than a growing list of individual props: a browse view has seven parameters, a
+ * cursor means nothing without all seven, and a prop list invites a call site to
+ * forget one. It has already been a bug once — the feed used to take `tag` and
+ * `contributor` as separate props, and adding `q` without threading it through
+ * would have made page two of a search the entire unfiltered feed.
+ *
+ * `key` is set by the parent on the active filters, so changing any of them
+ * remounts this and drops the accumulated pages.
  */
 export function ResourceFeed({
   initialItems,
   initialNextCursor,
-  tag,
-  contributor,
+  filters,
   canShare,
 }: {
   initialItems: Resource[];
   initialNextCursor: string | null;
-  tag?: string;
   /**
-   * Restricts the listing to one contributor's resources, the same as the
-   * backend's `?contributor=`.
+   * Everything narrowing this listing — tag, contributor, `q`, type, access level
+   * and ordering. Sent again on every "load more" so page two is page two of the
+   * same view rather than of the whole site.
    *
-   * Carried on every "load more" request, and deliberately not derivable from the
-   * page it was rendered on: the feed is the one client component here, so the
-   * filter has to travel with the cursor or page two of a profile would be page
-   * two of the whole feed.
+   * Deliberately the same shape as `listResources`, so a page passes what it
+   * fetched with rather than restating it.
    */
-  contributor?: string;
+  filters?: ListResourcesParams;
   /** Whether to offer the share call to action in the empty state. */
   canShare: boolean;
 }) {
@@ -65,11 +69,7 @@ export function ResourceFeed({
     setError(null);
 
     try {
-      const page = await listResources({
-        tag,
-        contributor,
-        cursor: nextCursor,
-      });
+      const page = await listResources({ ...filters, cursor: nextCursor });
 
       setItems((current) => [...current, ...page.items]);
       setNextCursor(page.nextCursor);
@@ -81,10 +81,28 @@ export function ResourceFeed({
   }
 
   if (items.length === 0) {
-    // A tag filter or a profile with nothing behind it is a dead end, so both
-    // offer a way back out. The unfiltered empty state is the first thing a new
-    // visitor sees, so it points at the contribution the product is built around.
-    const isFiltered = Boolean(tag) || Boolean(contributor);
+    /*
+     * Three distinct dead ends, worded differently on purpose. A search that
+     * matched nothing is the one a person is most likely to reach by accident — a
+     * typo, a tag that does not exist — so it names the query and says where it
+     * looked, rather than suggesting they share something.
+     */
+    const { q, tag, contributor } = filters ?? {};
+    const isFiltered = Boolean(q) || Boolean(tag) || Boolean(contributor);
+
+    const title = q
+      ? "Nothing matched"
+      : tag
+        ? "Nothing tagged with this yet"
+        : "Nothing shared yet";
+
+    const description = q
+      ? `No resource matched “${q}”. Search looks at titles, tags, and the reason somebody gave for sharing something.`
+      : tag
+        ? "No resource carries this tag so far."
+        : contributor
+          ? "This profile has no contributions that show a name. Anything shared anonymously is not listed, including for the person it belongs to."
+          : "Be the first to share something you found worth knowing.";
 
     return (
       <Empty className="border">
@@ -92,25 +110,13 @@ export function ResourceFeed({
           <EmptyMedia variant="icon">
             {isFiltered ? <TagIcon /> : <LibraryIcon />}
           </EmptyMedia>
-          <EmptyTitle>
-            {tag
-              ? "Nothing tagged with this yet"
-              : contributor
-                ? "Nothing shared yet"
-                : "Nothing shared yet"}
-          </EmptyTitle>
-          <EmptyDescription>
-            {tag
-              ? "No resource carries this tag so far."
-              : contributor
-                ? "This profile has no contributions that show a name. Anything shared anonymously is not listed, including for the person it belongs to."
-                : "Be the first to share something you found worth knowing."}
-          </EmptyDescription>
+          <EmptyTitle>{title}</EmptyTitle>
+          <EmptyDescription>{description}</EmptyDescription>
         </EmptyHeader>
         <EmptyContent>
           {isFiltered ? (
             <Button asChild variant="outline">
-              <Link href="/">See everything</Link>
+              <Link href="/browse">Browse everything</Link>
             </Button>
           ) : canShare ? (
             <Button asChild>

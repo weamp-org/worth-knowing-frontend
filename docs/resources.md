@@ -5,16 +5,86 @@ Server Components and client components falls where it does.
 
 ## Routes
 
-| Route                  | Renders                | Auth                        |
-| ---------------------- | ---------------------- | --------------------------- |
-| `/`                    | Feed, newest first     | Public                      |
-| `/?tag=<slug>`         | Feed filtered by tag   | Public                      |
-| `/resources/[id]`      | One resource           | Public                      |
-| `/resources/[id]/edit` | Edit form              | Owner only                  |
-| `/share`               | Share form             | Signed in, username claimed |
-| `/settings`            | Your preferences       | Signed in                   |
-| `/u/[username]`        | A profile              | Public                      |
-| `/settings/profile`    | Username, bio, privacy | Signed in                   |
+| Route                  | Renders                     | Auth                        |
+| ---------------------- | --------------------------- | --------------------------- |
+| `/`                    | Feed, newest first          | Public                      |
+| `/?tag=<slug>`         | Feed filtered by tag        | Public                      |
+| `/browse`              | Search and filter view      | Public                      |
+| `/resources/[id]`      | One resource                | Public                      |
+| `/resources/[id]/edit` | Edit form                   | Owner only                  |
+| `/share`               | Share form                  | Signed in, username claimed |
+| `/settings`            | Your preferences            | Signed in                   |
+| `/u/[username]`        | A profile                   | Public                      |
+| `/settings/profile`    | Username, bio, privacy      | Signed in                   |
+
+## `/browse` — all state is in the URL
+
+`/browse` is the canonical search and filter view. It reads `?q=`, `?tag=`,
+`?type=`, `?accessType=` and `?sort=`, and **every one of them lives in the URL**.
+
+That is the design rather than an implementation detail. It makes a filtered view
+shareable and linkable, makes the back button step through the filters, and — the
+part that matters — leaves no client-side copy of the result set that could
+disagree with the controls above it. A navigation re-renders the Server
+Component, which fetches page one afresh and remounts the feed.
+
+`src/lib/browse.ts` owns the parameter shape and is the only place that builds
+those URLs:
+
+- `browseHref(params)` — builds `/browse?…` with a **fixed parameter order**, so
+  two links built from the same state are the same string. Otherwise the browser
+  treats a reordered query as a new history entry and back starts feeling
+  unreliable. Absent, empty and whitespace-only values are all dropped, so a bare
+  `?q=` never becomes a link that reads as a search and renders everything.
+- `parseBrowseParams(searchParams)` — narrows the URL to known values.
+  `searchParams` is whatever the URL said, so `?type=BANANA` reaches the page;
+  forwarding it would be a 400 and an error page, where dropping it is an
+  unfiltered browse — what someone following a stale link actually wants.
+
+### The search box navigates rather than filtering in place
+
+`SearchBox` is a real `<form>` whose submit calls `router.push`, landing on
+`/browse`. It does **not** filter the feed below it as you type.
+
+Two reasons. A search that is a URL can be shared, bookmarked and reached with the
+back button; a search held in component state cannot. And results belong next to
+the filters that shaped them.
+
+Enter submits without JavaScript wiring up a key handler, and the browser's own
+"search this page" affordances work, because it is genuinely a form.
+
+`carry` holds the tag, type and access level a new search should keep. Those
+narrow *which* resources are in scope, and a new search is still inside that
+scope. `sort` is deliberately **not** carried: it decides *how* to order results,
+and the right order for a new query is usually relevance. Keeping a title sort
+across a fresh search would show the matches alphabetically because of a choice
+made for a different question.
+
+### Relevance is the absence of `sort`
+
+The backend has no `sort=relevance` — relevance is what you get from `q` with no
+`sort`, and an explicit sort alongside `q` means "every match, in this order".
+
+So the sort control offers `Relevance` as a real option that **clears** `sort`
+rather than writing a value the backend would reject, and only when a `q` is
+present. With no search there is nothing to be relevant to.
+
+`Type` and `Access` carry an explicit `Any type` item for the same shape of
+reason: Radix has no "no value selected" item, its placeholder is not clickable,
+and re-picking the current item does not deselect it. Without one, choosing a
+filter would be a one-way door.
+
+### `ResourceFeed` takes `filters`, not individual props
+
+`ResourceFeed` takes one `filters` object — the same shape as
+`ListResourcesParams` — and re-sends it on **every** "Load more".
+
+A cursor means nothing without the filters that produced it: relevance paging
+carries a `(score, id)` pair rather than a bare id, and every filter has to be
+present or page two is page two of the whole site. A prop list invites a call
+site to forget one, and that is not hypothetical — the feed used to take `tag` and
+`contributor` as separate props, and adding `q` without threading it would have
+made page two of a search the entire unfiltered feed.
 
 ## Reads are Server Components, writes are client components
 
@@ -58,14 +128,15 @@ Appending rather than replacing is the reason this is a client component at all.
 A `?cursor=` link would be a handful of lines shorter, but clicking it would
 swap page one for page two. The cursor never reaches the URL.
 
-The parent sets `key={tag}` on `ResourceFeed`, so changing the filter remounts it
-and drops the accumulated pages — otherwise the feed would show page two of the
-previous tag underneath page one of the new one.
+The parent sets `key={tag}` on `ResourceFeed` (and `key={browseHref(params)}` on
+`/browse`), so changing any filter remounts it and drops the accumulated pages —
+otherwise the feed would show page two of the previous filter underneath page one
+of the new one.
 
-A profile's listing is the same component with `contributor` set instead of
-`tag`, and it carries the filter into the "load more" request. It is the one
-client component in the read path, so a filter that was not carried would make
-page two of a profile be page two of the whole feed. See `docs/profiles.md`.
+A profile's listing is the same component with `filters={{ contributor }}`, and it
+carries the filter into the "load more" request. It is the one client component in
+the read path, so a filter that was not carried would make page two of a profile
+be page two of the whole feed. See `docs/profiles.md`.
 
 ## Hydration
 

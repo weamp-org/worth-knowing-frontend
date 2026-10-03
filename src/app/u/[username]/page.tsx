@@ -172,7 +172,7 @@ export default async function ProfilePage({
           key={handle}
           initialItems={resources.items}
           initialNextCursor={resources.nextCursor}
-          contributor={handle}
+          filters={{ contributor: handle }}
           canShare={userId !== null}
         />
       </div>

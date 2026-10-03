@@ -253,3 +253,29 @@ export type UserRole = (typeof USER_ROLES)[number];
 export const USERNAME_MIN_LENGTH = 3;
 export const USERNAME_MAX_LENGTH = 24;
 export const MAX_BIO_LENGTH = 280;
+
+/**
+ * Mirrors the backend's `ResourceSort`.
+ *
+ * **Relevance is deliberately absent.** It is what you get by sending `q` and no
+ * `sort`, not a value — see the note in `resources-api.ts`. An explicit sort
+ * alongside `q` means "everything that matched, in this order".
+ */
+export const RESOURCE_SORTS = ["newest", "oldest", "title"] as const;
+
+export type ResourceSort = (typeof RESOURCE_SORTS)[number];
+
+export const RESOURCE_SORT_LABELS: Record<ResourceSort, string> = {
+  newest: "Newest first",
+  oldest: "Oldest first",
+  title: "Title (A–Z)",
+};
+
+/**
+ * Longest `q` the backend accepts, restated so the input can `maxLength` rather
+ * than offering a query that comes back as a 400.
+ *
+ * Not a column width: the backend's bound caps how expensive a trigram comparison
+ * may get, rather than limiting how long a title is.
+ */
+export const SEARCH_QUERY_MAX_LENGTH = 100;

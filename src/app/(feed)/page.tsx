@@ -2,6 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import type { Metadata } from "next";
 
 import { ResourceFeed } from "@/components/resource-feed";
+import { SearchBox } from "@/components/search-box";
 import { TagBadge } from "@/components/tag-badge";
 import type { TagSearchResult } from "@/lib/resource-types";
 import { listResources, listTags } from "@/lib/resources-api";
@@ -42,6 +43,22 @@ export default async function Home({
         Discover things worth knowing, from people who found them worth knowing.
       </p>
 
+      {/*
+        The search field sits here rather than in the header, and the page stays
+        the feed rather than becoming a landing page.
+
+        Both are deliberate. `/browse` is where a search *lands*, with the filters
+        and the ordering beside it, so this box is a way into that route rather
+        than a filter over what is already below it. And the feed stays on `/`
+        because moving it would break every shared `/?tag=` link and leave the
+        site with no feed at all until the other home sections exist — a landing
+        page with one search box on it is not obviously better than this, and the
+        split is cheap to make later and expensive to make now.
+      */}
+      <div className="mt-8">
+        <SearchBox id="home-search" />
+      </div>
+
       <TagFilter tags={tags} activeTag={tag} />
 
       <div className="mt-6">
@@ -52,7 +69,7 @@ export default async function Home({
           key={tag ?? "all"}
           initialItems={page.items}
           initialNextCursor={page.nextCursor}
-          tag={tag}
+          filters={{ tag }}
           canShare={userId !== null}
         />
       </div>
