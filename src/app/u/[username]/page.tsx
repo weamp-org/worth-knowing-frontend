@@ -8,9 +8,12 @@ import { ResourceFeed } from "@/components/resource-feed";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getCachedPublicCollections } from "@/lib/collection-queries";
+import { descriptionFrom } from "@/lib/description";
 import { formatDate } from "@/lib/format";
 import { getCachedProfile, getProfileOrNotFound } from "@/lib/profile-queries";
 import { listResources } from "@/lib/resources-api";
+import { absoluteUrl, siteOgImage } from "@/lib/site";
+import { JsonLd } from "@/lib/structured-data";
 
 /**
  * Every render reads live data, so this must not be prerendered — `pnpm build`
@@ -20,6 +23,32 @@ import { listResources } from "@/lib/resources-api";
  */
 export const dynamic = "force-dynamic";
 
+/**
+ * A public profile's metadata.
+ *
+ * ## What a profile is, for search purposes
+ *
+ * This product's differentiation is that a resource arrives with a *name on it*.
+ * A profile page is where that name has a body: it is a person's public record of
+ * what they have found worth knowing and why. So it is indexable, self-canonical
+ * on its clean route, and described by the bio when there is one.
+ *
+ * The description falls back to a factual count rather than to nothing — a
+ * snippet saying only the person's name says nothing about the page.
+ *
+ * ## Privacy, which is the load-bearing part
+ *
+ * - **A private profile is not reachable.** `GET /users/:username` answers 404
+ *   for anybody but the owner, so this metadata never runs for one, and Next
+ *   injects `noindex` on the 404 page. There is no `isProfilePrivate` check here
+ *   because there is nothing to check — the data never arrives.
+ * - **The bio is opt-in text.** It is what the person chose to say publicly, and
+ *   it is already on the page. Nothing is pulled from anywhere else to fill the
+ *   snippet.
+ * - **The structured data is guarded** on `usernameLower`, because an
+ *   unclaimed account has no URL to be the subject of, and emitting a `Person`
+ *   node with a `url` that 404s would be inventing an identity.
+ */
 export async function generateMetadata({
   params,
 }: {
@@ -40,9 +69,36 @@ export async function generateMetadata({
     const name =
       profile.name ?? profile.usernameLower ?? "A Worth Knowing member";
 
+    const plural =
+      profile.resourcesCount === 1 ? "contribution" : "contributions";
+
+    const description = descriptionFrom(
+      profile.bio ??
+        `${profile.resourcesCount} ${plural} shared here, and why their contributor thought each one was worth knowing.`,
+    );
+
+    const path = `/u/${encodeURIComponent(username)}`;
+
     return {
       title: `${name} — Worth Knowing`,
-      description: profile.bio ?? `Resources shared by ${name}.`,
+      description: description ?? undefined,
+      alternates: { canonical: path },
+      robots: { index: true, follow: true },
+      openGraph: {
+        type: "profile",
+        title: `${name} — Worth Knowing`,
+        url: absoluteUrl(path) ?? undefined,
+        ...(description ? { description } : {}),
+        // Explicit because a page's `openGraph` **replaces** the layout's rather
+        // than merging into it, so a title set here without an image silently
+        // drops the inherited card. See `siteOgImage`.
+        images: siteOgImage(),
+      },
+      twitter: {
+        card: "summary_large_image",
+        title: `${name} — Worth Knowing`,
+        ...(description ? { description } : {}),
+      },
     };
   } catch {
     // The page itself decides whether this is a 404 or a real fault; metadata
@@ -149,6 +205,44 @@ export default async function ProfilePage({
         Only public ones. A private collection 404s for anybody but its owner, so
         asking for it would be asking for a list of 404s.
       */}
+      {/*
+        `ProfilePage` + `Person`, and only when there is a handle.
+
+        Guarded on `usernameLower` because an unclaimed account has no address to
+        be the subject of: a `Person` whose `url` 404s is an identity invented for
+        a page that does not exist. The handle is also the thing this product
+        guarantees a contribution has — `/share` gates on holding one, so a profile
+        that exists and is public is reachable at a stable URL.
+
+        **`sameAs` deliberately lists nothing else.** There is no other profile the
+        product knows this person has, and pointing at a guess would be worse than
+        omitting it.
+
+        The `Person` describes *this* profile's owner and nothing about the
+        contributions listed below them. Those are other people's pages with their
+        own authors, and a resource shared anonymously has no author to emit —
+        `ContributorByline` already handles those three states distinctly, and this
+        must not flatten them.
+      */}
+      {profile.usernameLower ? (
+        <JsonLd
+          data={{
+            "@context": "https://schema.org",
+            "@type": "ProfilePage",
+            url: absoluteUrl(`/u/${encodeURIComponent(profile.usernameLower)}`),
+            mainEntity: {
+              "@type": "Person",
+              name: profile.name ?? profile.usernameLower,
+              ...(profile.bio ? { description: profile.bio } : {}),
+              url: absoluteUrl(
+                `/u/${encodeURIComponent(profile.usernameLower)}`,
+              ),
+              ...(profile.imageUrl ? { image: profile.imageUrl } : {}),
+            },
+          }}
+        />
+      ) : null}
+
       {publicCollections.items.length > 0 ? (
         <section className="mt-10">
           <h2 className="text-xs font-semibold tracking-widest uppercase text-muted-foreground">

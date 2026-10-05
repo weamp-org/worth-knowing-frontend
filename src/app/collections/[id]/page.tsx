@@ -8,7 +8,10 @@ import {
   getCollectionOrNotFound,
   getCollectionResourcesOrNotFound,
 } from "@/lib/collection-queries";
+import { descriptionFrom } from "@/lib/description";
 import { formatDate } from "@/lib/format";
+import { absoluteUrl, siteOgImage } from "@/lib/site";
+import { JsonLd } from "@/lib/structured-data";
 
 /**
  * Per-viewer and never cached: a private collection resolves for its owner and
@@ -24,6 +27,24 @@ import { formatDate } from "@/lib/format";
  */
 export const dynamic = "force-dynamic";
 
+/**
+ * A public collection's metadata.
+ *
+ * The description is the curator's own reason for the grouping, truncated on a
+ * word boundary — this is the same `Collection.description` the schema calls "a
+ * titled list of links with no reasoning attached… the one thing this product
+ * should not render", so it is the part of the page worth putting in a snippet.
+ *
+ * `CollectionPage` + `ItemList` are emitted below and only for a **public**
+ * collection: a private one 404s for anybody but its owner, so it is never
+ * indexable and never reaches a crawler.
+ *
+ * The owner's name is **not** in the metadata. It is public on the page, but a
+ * snippet is a different surface — it is what a search result shows, cached and
+ * reproduced in contexts the curator did not choose — and a collection has no
+ * anonymity flag, so there is no signal saying this person's name is welcome there.
+ * The page links the owner; the snippet does not need to.
+ */
 export async function generateMetadata({
   params,
 }: {
@@ -33,12 +54,39 @@ export async function generateMetadata({
 
   try {
     const collection = await getCollectionOrNotFound(id);
+    const path = `/collections/${encodeURIComponent(id)}`;
+
+    const plural = collection.resourceCount === 1 ? "resource" : "resources";
+
+    const description = descriptionFrom(
+      collection.description ??
+        `A collection of ${collection.resourceCount} ${plural}.`,
+    );
+
+    const title = `${collection.title} — Worth Knowing`;
 
     return {
-      title: `${collection.title} — Worth Knowing`,
-      description:
-        collection.description?.slice(0, 160) ??
-        `A collection of ${collection.resourceCount} resources.`,
+      title,
+      description: description ?? undefined,
+      alternates: { canonical: path },
+      robots: { index: true, follow: true },
+      openGraph: {
+        // `website`, not `article`: a collection is a curated listing of other
+        // people's contributions, and it writes none of them.
+        type: "website",
+        title,
+        url: absoluteUrl(path) ?? undefined,
+        ...(description ? { description } : {}),
+        // Explicit because a page's `openGraph` **replaces** the layout's rather
+        // than merging into it, so a title set here without an image silently
+        // drops the inherited card. See `siteOgImage`.
+        images: siteOgImage(),
+      },
+      twitter: {
+        card: "summary_large_image",
+        title,
+        ...(description ? { description } : {}),
+      },
     };
   } catch {
     // The page itself decides whether this is a 404 or a real fault; metadata
@@ -125,6 +173,64 @@ export default async function CollectionPage({
           </p>
         ) : null}
       </header>
+
+      {/*
+        `CollectionPage` + `ItemList`, and only these two.
+
+        A public collection genuinely *is* a curated list of items with a stated
+        reason for the grouping — the schema calls `description` load-bearing
+        rather than decorative — so this describes the page accurately instead of
+        reaching for a more impressive type.
+
+        What is deliberately absent is any `Course`/`Book`/`Article`/`VideoObject`
+        for the resources inside it. Those assert facts about the linked
+        resources — provider, author, duration — and a collection is somebody
+        else's curation of links we do not host. Claiming them here would be the
+        same misrepresentation as on a resource page.
+
+        No `author` either, even though the owner is always attributed on a
+        collection (there is no anonymous mode for one): a collection is a
+        statement about taste, and a `Person` node would make the curator an
+        author of contributions they did not write. `curator` says what is true.
+      */}
+      {!collection.isPrivate ? (
+        <JsonLd
+          data={{
+            "@context": "https://schema.org",
+            "@type": "CollectionPage",
+            name: collection.title,
+            ...(collection.description
+              ? { description: collection.description }
+              : {}),
+            url: absoluteUrl(
+              `/collections/${encodeURIComponent(collection.id)}`,
+            ),
+            ...(collection.owner
+              ? {
+                  about: {
+                    "@type": "Person",
+                    name: collection.owner.name ?? "a Worth Knowing member",
+                    ...(collection.owner.profilePath
+                      ? { url: absoluteUrl(collection.owner.profilePath) }
+                      : {}),
+                  },
+                }
+              : {}),
+            mainEntity: {
+              "@type": "ItemList",
+              numberOfItems: collection.resourceCount,
+              itemListElement: contents.items.map((resource, position) => ({
+                "@type": "ListItem",
+                position: position + 1,
+                name: resource.title,
+                url: absoluteUrl(
+                  `/resources/${encodeURIComponent(resource.id)}`,
+                ),
+              })),
+            },
+          }}
+        />
+      ) : null}
 
       <CollectionResourceFeed
         collectionId={collection.id}

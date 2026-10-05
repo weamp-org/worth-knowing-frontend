@@ -8,7 +8,7 @@ Server Components and client components falls where it does.
 | Route                  | Renders                     | Auth                        |
 | ---------------------- | --------------------------- | --------------------------- |
 | `/`                    | Home: recent, most saved, surprise | Public              |
-| `/?tag=<slug>`         | Home with recent filtered by tag | Public              |
+| `/tags/[slug]`         | Everything under one tag    | Public                      |
 | `/browse`              | Search and filter view      | Public                      |
 | `/resources/[id]`      | One resource                | Public                      |
 | `/resources/[id]/edit` | Edit form                   | Owner only                  |
@@ -16,6 +16,9 @@ Server Components and client components falls where it does.
 | `/settings`            | Your preferences            | Signed in                   |
 | `/u/[username]`        | A profile                   | Public                      |
 | `/settings/profile`    | Username, bio, privacy      | Signed in                   |
+
+`/?tag=<slug>` used to be a route of its own. It is now a **308 permanent
+redirect** to `/tags/[slug]`, handled in `src/proxy.ts` — see `docs/seo.md`.
 
 ## `/browse` — all state is in the URL
 

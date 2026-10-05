@@ -9,6 +9,7 @@ import { SearchBox } from "@/components/search-box";
 import { TagBadge } from "@/components/tag-badge";
 import { browseHref, parseBrowseParams } from "@/lib/browse";
 import { listResources, listTags } from "@/lib/resources-api";
+import { absoluteUrl, siteOgImage } from "@/lib/site";
 
 /**
  * Every render reads live data from the backend, so this must not be prerendered
@@ -19,11 +20,83 @@ import { listResources, listTags } from "@/lib/resources-api";
  */
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = {
-  title: "Browse — Worth Knowing",
-  description:
-    "Search everything shared here, and narrow it by type, access level and order.",
-};
+/**
+ * The canonical search and filter view.
+ *
+ * ## Only the *unfiltered* view is indexable
+ *
+ * `/browse` with nothing on it is a genuine "everything shared here" listing and
+ * is the site's second front door, so it is indexable and self-canonical.
+ *
+ * Every other state of the same route — a search, a filter, a sort, any
+ * combination — is `noindex`, and that is a deliberate split rather than a
+ * blanket rule for convenience:
+ *
+ * - **`?q=` is free text**, so the space of search URLs on this domain is
+ *   effectively unbounded, and every one returns 200 with a list. Left indexable,
+ *   a crawl of the site walks an infinite duplicate space. `robots.ts`
+ *   disallows `?q=` for the same reason.
+ * - **The filtered and sorted states are the same content as the unfiltered one**
+ *   under a different order or a subset. Self-canonicalising each of them would
+ *   tell a crawler every one is a distinct page worth storing; canonicalising them
+ *   all to the bare route would claim the filter view has no existence of its own,
+ *   which is the opposite problem. `noindex` is the honest third option: the route
+ *   is one page, and the states are views of it.
+ *
+ * So no separate canonical URLs are created for search or sort states — they are
+ * not indexed, so there is nothing for a canonical to consolidate.
+ *
+ * The indexability is decided **here, in the page**, rather than in
+ * `generateMetadata`, because it depends on `searchParams`. Static `metadata`
+ * cannot read them, and a page that read them there would need the whole route
+ * dynamic in a second place for no benefit.
+ */
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}): Promise<Metadata> {
+  const params = parseBrowseParams(await searchParams);
+
+  const isFiltered = Boolean(
+    params.q || params.tag || params.type || params.accessType || params.sort,
+  );
+
+  const description =
+    "Search everything shared here, and narrow it by type, access level and order.";
+
+  return {
+    title: "Browse — Worth Knowing",
+    description,
+    ...(isFiltered
+      ? {
+          // No canonical on a filtered state: it is not indexed, so there is
+          // nothing to point a crawler at, and a canonical here would be read as
+          // "this is the same page as /browse" — a claim about content that is
+          // only true some of the time.
+          robots: { index: false, follow: true },
+        }
+      : {
+          alternates: { canonical: "/browse" },
+          robots: { index: true, follow: true },
+        }),
+    openGraph: {
+      title: "Browse — Worth Knowing",
+      description,
+      url: absoluteUrl("/browse") ?? undefined,
+      type: "website",
+      // Explicit because a page's `openGraph` **replaces** the layout's rather
+      // than merging into it, so setting a title here without an image silently
+      // drops the inherited card. See `siteOgImage`.
+      images: siteOgImage(),
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: "Browse — Worth Knowing",
+      description,
+    },
+  };
+}
 
 /**
  * The canonical search and filter view.

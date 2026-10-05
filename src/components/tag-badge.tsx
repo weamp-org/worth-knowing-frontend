@@ -104,9 +104,20 @@ export function TagBadge({
       asChild
       className={cn(CHIP_CLASS, state, className)}
     >
-      {/* `#` is legal in a slug and starts a fragment, hence the encoding. Built
-          here so no call site can forget it. */}
-      <Link href={href ?? `/?tag=${encodeURIComponent(tag.slug)}`}>
+      {/*
+        `/tags/[slug]`, not `/?tag=`.
+
+        A tag is a place, and this is its address. The `/?tag=` form rendered the
+        homepage with six cards swapped, shared the homepage's title and
+        description, and had nowhere a crawler could treat as a topic — while the
+        slug was already documented as permanent, linkable identity. `#` is legal
+        in a slug (`C#`) and starts a fragment, hence the encoding; built here so
+        no call site can forget it.
+
+        An explicit `href` still wins, which is what `/browse`'s nav passes: there
+        the tag is a filter *within a search view*, not a destination.
+      */}
+      <Link href={href ?? `/tags/${encodeURIComponent(tag.slug)}`}>
         {tag.name}
         {typeof count === "number" ? <TagCount count={count} /> : null}
       </Link>

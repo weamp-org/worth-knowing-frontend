@@ -75,7 +75,10 @@ src/
 │   │   └── loading.tsx      # Home-only loading boundary
 │   ├── error.tsx            # Error boundary
 │   ├── not-found.tsx        # 404 page
-│   ├── contributors/        # Static "who works on this" page
+│   ├── contributors/        # Static "who works on this" page (noindex)
+│   ├── robots.ts            # Crawl rules + sitemap declaration
+│   ├── sitemap.ts           # Every legitimate public URL
+│   ├── opengraph-image.tsx  # Site-wide social card
 │   ├── share/
 │   │   ├── page.tsx         # Share a resource (auth required)
 │   │   └── loading.tsx
@@ -95,9 +98,11 @@ src/
 │   │   └── page.tsx         # Your saved resources (auth required)
 │   ├── moderation/
 │   │   └── page.tsx         # Reported contributions and comments (admin only)
+│   ├── tags/[slug]/         # A tag, and everything shared under it
 │   ├── u/[username]/        # Public profile, contributions, public collections
 │   └── resources/[id]/
 │       ├── page.tsx         # Resource detail
+│       ├── opengraph-image.tsx # Card carrying the contributor's `why`
 │       └── edit/page.tsx    # Edit your own resource
 ├── components/
 │   ├── ui/                  # shadcn/ui (Biome-ignored, vendored)
@@ -189,6 +194,7 @@ is a migration of every read and write at once, not a per-component choice.
 | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Clerk publishable key (public, starts with `pk_`)           |
 | `CLERK_SECRET_KEY`                  | Clerk secret key (private, starts with `sk_`)               |
 | `NEXT_PUBLIC_BACKEND_BASE_URL`      | NestJS backend URL (default: `http://localhost:3000/api/v1`) |
+| `NEXT_PUBLIC_SITE_URL`              | Canonical production origin. **No fallback** — a missing value fails the build rather than shipping localhost canonicals. See `docs/seo.md`. |
 
 ## Scripts
 
@@ -210,6 +216,7 @@ is a migration of every read and write at once, not a per-component choice.
 - [Comments](docs/comments.md) — The thread on a resource page, the reply quote, reporting, and the moderation queue
 - [Theming](docs/theming.md) — Dark mode, CSS variables, custom tokens
 - [Dates](docs/dates.md) — Why we use `Intl` and not a date library
+- [SEO](docs/seo.md) — Indexability, canonicals, the sitemap, OG cards, structured data, and tag pages
 - [Deployment](docs/deployment.md) — Build, environment variables, deploy targets
 
 ## License

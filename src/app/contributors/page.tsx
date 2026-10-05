@@ -4,9 +4,29 @@ import type { Metadata } from "next";
  * Static, so it prerenders. The data is two URLs rather than something fetched:
  * see the note below on why this does not read from the API.
  */
+/**
+ * `noindex`, deliberately, and it stays in the footer.
+ *
+ * This page is about *repository commit history* — two outbound links to GitHub
+ * contributor graphs — under a title that reads "Contributors — Worth Knowing".
+ * On a product whose whole proposition is curation by identifiable people, that
+ * is the wrong occupant of the phrase: the people who built the software are not
+ * the people whose judgement the site is for, and the page links zero times into
+ * the product.
+ *
+ * It is also the only in-app footer link besides WeAMP, so it is the site's
+ * second-most-linked page — which is what made this worth acting on rather than
+ * ignoring. Being linked from everywhere is a reason to be *correct* about what it
+ * claims to be, and the honest claim here is "this is a repository page".
+ *
+ * Rebuilding it into a real contributor hub — indexing every profile and public
+ * collection on the site — would be a genuine improvement, and it is a **product**
+ * feature rather than an SEO one. It is deferred rather than half-done here.
+ */
 export const metadata: Metadata = {
   title: "Contributors — Worth Knowing",
   description: "The people who have built Worth Knowing.",
+  robots: { index: false, follow: true },
 };
 
 /**

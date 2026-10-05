@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { getCachedMyCollections } from "@/lib/collection-queries";
 import { getCommentsForViewer } from "@/lib/comments-queries";
 import { ContributorByline } from "@/lib/contributor";
+import { descriptionFrom } from "@/lib/description";
 import { formatDate, getHostname } from "@/lib/format";
 import {
   getCachedResource,
@@ -17,9 +18,48 @@ import {
 } from "@/lib/resource-queries";
 import { ACCESS_TYPE_LABELS, RESOURCE_TYPE_LABELS } from "@/lib/resource-types";
 import { getSavedStateForViewer } from "@/lib/saved-queries";
+import { absoluteUrl } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
 
+/**
+ * The resource page's metadata — the most important metadata on the site.
+ *
+ * ## What this page actually is
+ *
+ * A resource plus a specific person's reason for believing it is worth knowing.
+ * That pairing is the product's entire asset, and **this is the only URL where it
+ * exists.** A search engine can already return the course, the book or the paper;
+ * what it cannot return is why somebody thought it was worth your time. So the
+ * snippet has to carry the reasoning, not a restatement of the title.
+ *
+ * ## Why `why` is the description
+ *
+ * Because it is the differentiated text. `why` runs to 5,000 characters, so it is
+ * truncated — but on a **word boundary**, since a mid-word cut reads as broken
+ * rather than as an excerpt, and the snippet is often the only place a reader
+ * meets the reasoning before deciding whether to click. See
+ * `src/lib/description.ts`.
+ *
+ * ## No third-party schema type, on purpose
+ *
+ * There is deliberately no `Course`, `Book`, `Article`, `VideoObject`,
+ * `LearningResource` or `Dataset` here. Every one of those asserts facts about
+ * the *linked* resource — provider, instructor, duration, edition, ISBN — and this
+ * page has none of them. It has a title the contributor typed and a reason they
+ * wrote. Emitting a `Course` would mean claiming `provider` and
+ * `hasCourseInstance` for somebody else's course, which competes with the actual
+ * provider's page for the query and is a misrepresentation of what this site
+ * knows. The product curates; it does not republish.
+ *
+ * ## Nothing private leaks into the metadata
+ *
+ * `og:` and `twitter:` carry the title and the contributor's `why` — both
+ * deliberately public on this page — and nothing else. There is no contributor
+ * name, no avatar, and no author URL, because a resource shared anonymously has
+ * none to give. `getCachedResource` is the *public* read, so an anonymous
+ * contribution is already redacted before this runs.
+ */
 export async function generateMetadata({
   params,
 }: {
@@ -32,9 +72,34 @@ export async function generateMetadata({
     // request rather than two.
     const resource = await getCachedResource(id);
 
+    const path = `/resources/${encodeURIComponent(id)}`;
+    const description = descriptionFrom(resource.why);
+    const title = `${resource.title} | Worth Knowing`;
+
     return {
-      title: `${resource.title} — Worth Knowing`,
-      description: resource.why.slice(0, 160),
+      title,
+      description: description ?? undefined,
+      alternates: { canonical: path },
+      robots: { index: true, follow: true },
+      openGraph: {
+        // `article` rather than `website`: this page is a single piece of content
+        // with a title and a body, not a section of the site. That is a statement
+        // about *this page's* shape, not a claim about the linked resource.
+        type: "article",
+        title,
+        url: absoluteUrl(path) ?? undefined,
+        ...(description ? { description } : {}),
+        // Published/modified, from the resource's own timestamps. `modifiedTime`
+        // is honest here because editing a `why` is a substantive content change,
+        // and nothing else on the page says so.
+        publishedTime: resource.createdAt,
+        modifiedTime: resource.updatedAt,
+      },
+      twitter: {
+        card: "summary_large_image",
+        title,
+        ...(description ? { description } : {}),
+      },
     };
   } catch {
     // The page itself decides whether this is a 404 or a real fault; metadata

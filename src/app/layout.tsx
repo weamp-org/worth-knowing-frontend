@@ -8,6 +8,7 @@ import { SiteHeader } from "@/components/site-header";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthTokenSetter } from "@/lib/auth-token-setter";
+import { SITE_NAME, SITE_TAGLINE, siteUrl } from "@/lib/site";
 import { cn } from "@/lib/utils";
 import "./globals.css";
 
@@ -29,10 +30,39 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+/**
+ * Site-wide metadata defaults.
+ *
+ * **`robots: { index: false, follow: true }` is the important line.** Everything
+ * under this layout is a page, and most of them are somebody's saved list,
+ * settings form, or edit form — none of which belongs in a search result. The
+ * six public routes opt back in explicitly, which means a new route is
+ * non-indexable by default rather than indexable by omission.
+ *
+ * `noindex` rather than relying on `robots.ts`, and the distinction matters: a
+ * `Disallow` stops a crawler spending a request but a URL that is *linked* can
+ * still be indexed without a snippet, whereas `noindex` is what actually keeps a
+ * page out of results. The two are complementary and both are in place.
+ *
+ * `follow: true` alongside it, so a crawler reading a link on a non-indexable
+ * page still follows it onward to one that is.
+ */
 export const metadata: Metadata = {
-  title: "Worth Knowing",
-  description:
-    "Discover things worth knowing, from people who found them worth knowing.",
+  metadataBase: siteUrl() ?? undefined,
+  title: SITE_NAME,
+  description: SITE_TAGLINE,
+  robots: { index: false, follow: true },
+  openGraph: {
+    type: "website",
+    siteName: SITE_NAME,
+    title: SITE_NAME,
+    description: SITE_TAGLINE,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: SITE_NAME,
+    description: SITE_TAGLINE,
+  },
 };
 
 export default function RootLayout({

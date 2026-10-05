@@ -181,10 +181,63 @@ export async function getRandomResource(
   return response.data;
 }
 
+/**
+ * Page size for {@link listAllTags}.
+ *
+ * The backend caps `limit` at 1000 and the tag table is small by nature — tags
+ * are created implicitly on resource write, and a resource carries at most five.
+ * Asking for 1000 is "give me everything there is" expressed as a number, rather
+ * than an unbounded request that has to be handled as a special case.
+ */
+const ALL_TAGS_LIMIT = 1000;
+
 /** Backs the feed's tag filter. Omit `query` for the most-used tags. */
 export async function listTags(query?: string): Promise<TagSearchResult[]> {
   const response = await api.get<TagSearchResult[]>("/tags", {
     params: query ? { query } : undefined,
+  });
+
+  return response.data;
+}
+
+/**
+ * One tag, by its exact slug.
+ *
+ * **Exact, not a search.** `GET /tags?query=` is a substring match, because the
+ * contributor-facing typeahead is somebody typing a prefix of something they
+ * half-remember. `/tags/[slug]` is not that: `/tags/mach` must not render
+ * `/tags/machine-learning`, or two tags would answer to one URL — and that page
+ * is self-canonical, so one of them would end up holding the other's canonical
+ * identity.
+ */
+export async function getTagBySlug(slug: string): Promise<TagSearchResult> {
+  const response = await api.get<TagSearchResult>(
+    `/tags/${encodeURIComponent(slug)}`,
+  );
+
+  return response.data;
+}
+
+/**
+ * The whole tag vocabulary, not the nav's most-used cut.
+ *
+ * `listTags()` deliberately asks for nothing and gets the backend's default
+ * twenty, because the nav is a most-used cut and the count beside each chip is
+ * what makes that cut legible. This is the other question: *every* tag, for the
+ * sitemap.
+ *
+ * **Worth stating why this exists at all.** A tag created on the 21st distinct
+ * slug is a real tag that a real person typed, attached to a real contribution,
+ * and that the navigation cannot show them. The cap is right for the nav and
+ * wrong for the vocabulary, so the vocabulary needs a way to be asked for whole.
+ *
+ * Orphaned tags — those with no resources left — are **not** filtered out here.
+ * The sitemap decides what belongs in it; keeping that decision at the call site
+ * means this stays a plain vocabulary read.
+ */
+export async function listAllTags(): Promise<TagSearchResult[]> {
+  const response = await api.get<TagSearchResult[]>("/tags", {
+    params: { limit: ALL_TAGS_LIMIT },
   });
 
   return response.data;

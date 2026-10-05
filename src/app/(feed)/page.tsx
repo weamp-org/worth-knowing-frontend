@@ -20,6 +20,7 @@ import {
   listTags,
   TOP_SAVED_RAIL_SIZE,
 } from "@/lib/resources-api";
+import { SITE_NAME, SITE_TAGLINE } from "@/lib/site";
 
 /**
  * Every render reads live data from the backend, so this must not be
@@ -27,10 +28,20 @@ import {
  */
 export const dynamic = "force-dynamic";
 
+/**
+ * The homepage's own metadata, overriding the layout's `noindex` default.
+ *
+ * **Self-canonical and indexable**, because this is the front door and the one
+ * page every crawl starts from. The canonical is explicit rather than left to be
+ * inferred: `metadataBase` resolves a bare `"/"`, but stating it here keeps the
+ * intent visible alongside the other routes that do the same, and makes the
+ * indexability an explicit choice rather than an absence.
+ */
 export const metadata: Metadata = {
-  title: "Worth Knowing",
-  description:
-    "Discover things worth knowing, from people who found them worth knowing.",
+  title: SITE_NAME,
+  description: SITE_TAGLINE,
+  alternates: { canonical: "/" },
+  robots: { index: true, follow: true },
 };
 
 /**
@@ -129,22 +140,27 @@ export default async function Home({
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-10">
       {/*
-        No `h1`.
+        No *visible* `h1`.
 
-        The header already carries the wordmark as a link to `/`, so a heading
-        repeating it says the same thing twice on every page load — and worse than
-        the repetition, it looked like a heading while behaving like a control, in
-        the one position on the page where a heading is expected.
+        The header already carries the wordmark as a link to `/`, so a visible
+        heading repeating it said the same thing twice on every page load — and
+        worse than the repetition, it looked like a heading while behaving like a
+        control, in the one position on the page where a heading is expected.
 
-        The tagline stays. It is the only place the product's premise is stated in
-        words, it is not in the footer, and without it the page opens straight into
-        a search box with nothing saying what is being searched. It is now the
-        first thing on the page, so the `py-10` on the container is doing all the
-        top spacing that the title block used to.
+        So it is `sr-only` rather than absent. The reasoning above is about how the
+        page *looks*, and it holds: nothing new appears. What it does not cover is
+        the document outline, where this page had no top-level heading at all and
+        every section below started at `h2`. The tagline is the only place the
+        product's premise is stated in words, so it is the honest text for the
+        heading — visually hidden, present in the outline, and announced once
+        rather than not at all.
+
+        It stays visible as a `<p>` immediately after. That is the repetition the
+        `h1` was avoiding; `sr-only` removes it from view entirely, and the
+        paragraph is what a reader actually sees.
       */}
-      <p className="text-muted-foreground">
-        Discover things worth knowing, from people who found them worth knowing.
-      </p>
+      <h1 className="sr-only">{SITE_TAGLINE}</h1>
+      <p className="text-muted-foreground">{SITE_TAGLINE}</p>
 
       {/*
         The search field sits here rather than in the header, and the page stays
@@ -157,8 +173,7 @@ export default async function Home({
         The page is now the one this comment used to say it was not: three
         sections instead of a single endless list, with the feed as the first of
         them. That was always the plan — see the note on the bounded recent
-        section above — and it happened without moving a single link, because
-        every `/?tag=` URL still resolves to the same page.
+        section above.
       */}
       <div className="mt-8">
         <SearchBox id="home-search" />
