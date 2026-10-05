@@ -1,11 +1,56 @@
 import {
   ACCESS_TYPES,
   type AccessType,
+  RESOURCE_SORT_LABELS,
   RESOURCE_SORTS,
   RESOURCE_TYPES,
   type ResourceSort,
   type ResourceType,
 } from "@/lib/resource-types";
+
+/**
+ * Sentinels for two choices that are real options but not backend values.
+ *
+ * **Relevance** — the backend models it as the *absence* of `sort`. There is no
+ * `sort=relevance`, and sending one is a 400, so choosing it clears `sort`.
+ *
+ * **Any** — a control needs a selectable "no filter" entry. Radix has no
+ * deselectable current item, its placeholder is not clickable, and re-picking the
+ * current item does nothing, so without one, choosing a filter is a one-way door.
+ *
+ * Neither can be an empty string: Radix reads that as "nothing selected" and
+ * renders the placeholder instead of the chosen item.
+ *
+ * They live here rather than inside either control because `/browse` now has two
+ * implementations of the same filters — inline on desktop, in a sheet on mobile —
+ * and a sentinel defined twice is a filter that clears on one and not the other.
+ */
+export const RELEVANCE = "__relevance";
+export const ANY = "__any";
+
+/** Maps a chosen option back to the parameter it stands for, if it is a real one. */
+export function chosen<T extends string>(value: string): T | undefined {
+  if (!value || value === ANY || value === RELEVANCE) return undefined;
+  return value as T;
+}
+
+/**
+ * The sort control's options, in order.
+ *
+ * Relevance leads, but only when there is a `q` — without a search there is
+ * nothing to be relevant to, and offering it would be offering a no-op.
+ */
+export function sortOptions(
+  hasQuery: boolean,
+): { value: string; label: string }[] {
+  return [
+    ...(hasQuery ? [{ value: RELEVANCE, label: "Relevance" }] : []),
+    ...RESOURCE_SORTS.map((value) => ({
+      value,
+      label: RESOURCE_SORT_LABELS[value],
+    })),
+  ];
+}
 
 /**
  * Everything `/browse` reads off the URL.

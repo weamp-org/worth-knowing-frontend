@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { BrowseFilters } from "@/components/browse-filters";
+import { FilterSheet } from "@/components/filter-sheet";
 import { ResourceFeed } from "@/components/resource-feed";
 import { SearchBox } from "@/components/search-box";
 import { TagBadge } from "@/components/tag-badge";
@@ -93,8 +94,30 @@ export default async function BrowsePage({
         />
       </div>
 
-      <div className="mt-6">
+      {/*
+        One control, two layouts. The inline row is the better experience where
+        there is width for it — every change applies immediately, so picking a
+        filter is one interaction rather than three. On a phone three full-width
+        selects push the results off-screen and make the list jump on each pick,
+        so it collapses to a trigger and a sheet.
+      */}
+      <div className="mt-6 hidden sm:block">
         <BrowseFilters
+          type={type}
+          accessType={accessType}
+          sort={sort}
+          carry={{ q, tag }}
+        />
+      </div>
+
+      {/*
+        Hidden with CSS rather than unmounted by a media query, which avoids a
+        hydration mismatch and a `matchMedia` listener. Both are in the DOM at
+        every width, which is why the sheet prefixes its ids instead of sharing
+        `filter-type` and friends.
+      */}
+      <div className="mt-6 sm:hidden">
+        <FilterSheet
           type={type}
           accessType={accessType}
           sort={sort}
