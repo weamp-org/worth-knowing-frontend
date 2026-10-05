@@ -2,6 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { CollectionCard } from "@/components/collection-card";
 import { HomeSection } from "@/components/home-section";
 import { ResourceCard } from "@/components/resource-card";
 import { ResourceFeedEmpty } from "@/components/resource-feed-empty";
@@ -9,6 +10,7 @@ import { SearchBox } from "@/components/search-box";
 import { SurpriseMe } from "@/components/surprise-me";
 import { TagBadge } from "@/components/tag-badge";
 import { browseHref } from "@/lib/browse";
+import { listPublicCollections } from "@/lib/collections-api";
 import { getRandomResourceOrNull } from "@/lib/resource-queries";
 import type { TagSearchResult } from "@/lib/resource-types";
 import {
@@ -40,6 +42,15 @@ export const metadata: Metadata = {
  */
 const RECENT_SECTION_SIZE = 6;
 
+/**
+ * How many collections the home page shows.
+ *
+ * Four rather than six. `CollectionCard` carries a `line-clamp-3` description —
+ * a curator's reason for the grouping — so each one is taller than a resource
+ * card, and this is a section to glance at rather than to read down.
+ */
+const COLLECTIONS_SECTION_SIZE = 4;
+
 export default async function Home({
   searchParams,
 }: {
@@ -48,7 +59,7 @@ export default async function Home({
   const { tag } = await searchParams;
 
   /*
-   * One `Promise.all` rather than four awaits.
+   * One `Promise.all` rather than five awaits.
    *
    * `mostSaved` does not depend on `tag` and is still sent: the rail is the same
    * six resources whether the feed is filtered or not, so folding it into
@@ -56,17 +67,22 @@ export default async function Home({
    * filter above it — the kind of coupling nobody can see until a person notices
    * the rail is different on a filtered page and cannot work out why.
    *
+   * `collections` is filtered by nothing at all, for the same reason — and
+   * because the alternative would be worse: letting the tag filter narrow a list
+   * of *curations* would quietly change what the section means, since a
+   * collection is not a tagged resource and carries no tags of its own.
+   *
    * `randomResource` rides along for the same reason, and for a second one: it is
    * `null`-able rather than throwing, so it cannot reject this `all` and take the
    * page down. An empty site has no resource to be surprised by, and a home page
    * that 500s because a section had nothing to show would be an absurd place to
    * draw the line.
    *
-   * Parallel, so the home page waits on the slowest of the four rather than their
-   * sum.
+   * Parallel, so the home page waits on the slowest of the five rather than
+   * their sum.
    */
-  const [{ userId }, page, tags, mostSaved, randomResource] = await Promise.all(
-    [
+  const [{ userId }, page, tags, mostSaved, randomResource, publicCollections] =
+    await Promise.all([
       // Only used to decide whether the empty state offers a share button. The
       // feed itself is public either way.
       auth(),
@@ -77,8 +93,11 @@ export default async function Home({
       listTags(),
       listMostSaved(TOP_SAVED_RAIL_SIZE),
       getRandomResourceOrNull(),
-    ],
-  );
+      // Unfiltered, so this lists every public collection on the site. The backend
+      // drops private ones in the query, so a private collection cannot reach this
+      // list — asking for one would be asking for a list of 404s.
+      listPublicCollections({ limit: COLLECTIONS_SECTION_SIZE }),
+    ]);
 
   const hasMoreRecent = page.nextCursor !== null;
   const recent = page.items.slice(0, RECENT_SECTION_SIZE);
@@ -230,6 +249,43 @@ export default async function Home({
           <SurpriseMe initialResource={randomResource} />
         </HomeSection>
       ) : null}
+
+      {/*
+        Recently collected.
+
+        **Chronological, and deliberately not a ranked index.** The backend
+        declined a global collections browse on the grounds that a collection is
+        "a statement by somebody about their taste, which belongs beside the
+        contributions that express the same taste, not in a ranked index of its own"
+        — and that objection is to *ranking*, not to being listed. This is
+        newest-first, sits beside the feed rather than on a route of its own, and
+        the card leads with the curator's own `description`.
+
+        It is also why there is no `/collections/browse`. There is nothing on a
+        collection to rank by — no save count, no followers, no views — so a
+        "top collections" page could only be ordered by recency, which is exactly
+        what this section is. A second URL doing strictly less, and an invitation
+        to attach a count later and build the ranked index that was declined.
+
+        **The known weakness is the firehose.** Newest-first means one prolific
+        curator can fill all four slots permanently and bury everybody else's,
+        and because the section is bounded nothing ever pushes them out. That is
+        the reason to keep it small rather than a reason to grow it into a browse
+        page without a real ranking signal.
+
+        Collapses when empty like every other section here — which is most sites
+        at first, since a collection has to be made public before it can appear
+        here and a private one never does.
+      */}
+      <HomeSection
+        id="collections"
+        title="Recently collected"
+        description="Groups of resources somebody kept together, and why."
+      >
+        {publicCollections.items.map((collection) => (
+          <CollectionCard key={collection.id} collection={collection} />
+        ))}
+      </HomeSection>
     </div>
   );
 }

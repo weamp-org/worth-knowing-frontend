@@ -147,9 +147,41 @@ re-derives it.
 There are no tests in this package. `pnpm lint && pnpm typecheck && pnpm build`
 is the verification, and it is what CI runs.
 
+## Discovery
+
+Two surfaces, and the split between them is the design.
+
+**The profile page** shows one person's public collections as a set. This was the
+only surface for a while, and the argument for it has got *stronger* rather than
+weaker now that there is a second one: a collection belongs beside the
+contributions expressing the same taste, and a profile is the one page that shows
+both.
+
+**The home page** has a chronological "Recently collected" section — four cards,
+newest first, unfiltered. It is not a ranked index, which is what the backend
+declined; it is a bounded glance at what curation is happening.
+
+**There is deliberately no `/collections/browse`.** Nothing on a collection is
+rankable — no save count, no followers, no views — so a browse page could only be
+ordered by recency, which is precisely what the home section already is. A second
+URL doing strictly less, and an invitation to attach a count later and build the
+ranked index that was declined. If a collection count is ever added it needs the
+same discipline as `savedCount`: worded as interest, never as quality, because a
+popularity count measures nothing about whether a curation is any good.
+
+**`/collections` points outward.** It is `auth.protect()`ed and scoped to the
+caller, so somebody who followed a link to somebody else's public collection lands
+on their own list — empty, with no sign the thing they came for exists. The page
+now says where public collections actually surface.
+
+The weakness of the chronological section is the firehose: one prolific curator
+can hold every slot permanently and nothing pushes them out. That is the reason to
+keep it at four, and the reason not to grow it into a browse page without a real
+ranking signal.
+
 ## Not built, on purpose
 
-- No global `/collections` browse. Discovery is the profile page.
+- No `/collections/browse`. See [Discovery](#discovery) above.
 - No drag-and-drop reordering. Newest-collected first, and there is no `position`
   on the backend.
 - No size caps, and no "create collection" step inside the share form.

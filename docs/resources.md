@@ -315,6 +315,31 @@ something, not that it is the strongest thing here, and that distinction is the
 backend's — losing it on the most-read surface on the site is not a wording
 preference.
 
+### Recently collected
+
+`listPublicCollections({ limit: 4 })`, unfiltered, so it lists **every public
+collection on the site**. The backend drops private ones in the query, so a private
+collection cannot appear here.
+
+**Chronological, and not a ranked index.** The backend declined a global
+collections browse on the grounds that a collection is "a statement by somebody
+about their taste, which belongs beside the contributions that express the same
+taste, not in a ranked index of its own" (`collections.controller.ts`). That
+objection is to *ranking*, not to being listed, and this section is newest-first
+beside the feed rather than on a route of its own. `CollectionCard` already
+renders the curator's `description` — the most product-specific thing on the site,
+previously visible only to whoever happened to visit a profile.
+
+**Why there is no `/collections/browse`:** nothing on a collection is rankable.
+No save count, no followers, no views — so a "top collections" page could only be
+ordered by recency, which is exactly what this section is. A second URL doing
+strictly less, and an invitation to attach a count later and build the ranked index
+that was declined.
+
+**The known weakness is the firehose.** One prolific curator can hold all four
+slots permanently and bury everybody else's, and nothing ever pushes them out.
+That is the argument for keeping it small, not an argument for growing it.
+
 ### Surprise me
 
 One resource at random, **drawn by the server and rendered as an ordinary card**,

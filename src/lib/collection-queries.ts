@@ -66,9 +66,15 @@ export const getCachedMyCollections = cache(
  * collections out in the query, so every viewer gets the same answer. That is the
  * opposite of {@link getCollectionForViewer}, where the viewer genuinely changes
  * the result and therefore has to be part of the key.
+ *
+ * **Not used by the home page's "Recently collected" section**, which calls
+ * `listPublicCollections` directly with a `limit` and no owner. That one is
+ * site-wide, so there is no handle to key on — and it must not be `cache`d with a
+ * constant key, which would make one visitor's four collections the answer for
+ * every render after it in the same pass.
  */
 export const getCachedPublicCollections = cache((username: string) =>
-  listPublicCollections(username),
+  listPublicCollections({ owner: username }),
 );
 
 /**

@@ -116,15 +116,26 @@ export async function listCollectionResources(
  * person's public collections. The backend filters private ones out in the query,
  * so this can never surface one.
  *
- * Not currently reachable from a global browse UI — that is a product decision,
- * not a limitation of the route, which will list everything public when called
- * without `owner`.
+ * **Omitting `owner` lists every public collection on the site**, and that is
+ * what the home page's "Recently collected" section does. This is not a ranked
+ * index and is not meant to become one — see the section's own comment for why.
+ *
+ * `limit` is separate from `owner` rather than folded into it, because the two
+ * callers have nothing in common: a profile wants one person's collections with
+ * no opinion on size, while the home section wants a small fixed number off the
+ * whole site. Keeping them one parameter would have meant a positional `undefined`
+ * at one of the two call sites.
  */
 export async function listPublicCollections(
-  owner?: string,
+  options: { owner?: string; limit?: number } = {},
 ): Promise<PaginatedCollections> {
+  const { owner, limit } = options;
+
   const response = await api.get<PaginatedCollections>("/collections", {
-    params: owner ? { owner } : undefined,
+    params: {
+      ...(owner ? { owner } : {}),
+      ...(limit ? { limit } : {}),
+    },
   });
 
   return response.data;

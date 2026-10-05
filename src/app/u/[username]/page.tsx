@@ -142,12 +142,17 @@ export default async function ProfilePage({
       </header>
 
       {/*
-        Public collections, and the *only* way one is discovered. There is no
-        global browse: a public collection is a statement by somebody about their
-        taste, which is worth surfacing next to the taste they expressed as
-        contributions, and not worth ranking into a feed of its own. Listing them
-        here also means the "who curated this" question has an obvious answer —
-        the profile you are already on.
+        Public collections. This was the *only* way one was discovered and is no
+        longer the only one — the home page has a chronological "Recently
+        collected" section now.
+
+        Kept here regardless, because it is the better of the two surfaces for a
+        collection: the home section is a firehose where one prolific curator can
+        take every slot, whereas this shows one person's taste as a set, next to
+        the contributions expressing that same taste. That was always the argument
+        for listing them on a profile — "belongs beside the contributions that
+        express the same taste" — and it is a better argument now that there is a
+        competing surface, not a weaker one.
 
         Only public ones. A private collection 404s for anybody but its owner, so
         asking for it would be asking for a list of 404s.
