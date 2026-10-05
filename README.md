@@ -106,6 +106,7 @@ src/
 │   ├── resource-feed-empty.tsx # The three empty states (isomorphic)
 │   ├── home-section.tsx     # Labelled band; renders nothing when empty
 │   ├── avatar.tsx           # Picture, or initials where there is none (isomorphic)
+│   ├── contributor-hover-card.tsx # Byline + profile card, fetched on hover (client)
 │   ├── surprise-me.tsx      # Pre-drawn random resource + reshuffle (client)
 │   ├── resource-actions.tsx # Edit/Remove on yours, Report on anyone else's (client)
 │   ├── share-resource-form.tsx  # Share/edit form (client)

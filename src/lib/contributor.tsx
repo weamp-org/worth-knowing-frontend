@@ -1,6 +1,5 @@
-import Link from "next/link";
-
 import { Avatar } from "@/components/avatar";
+import { ContributorHoverCard } from "@/components/contributor-hover-card";
 
 /**
  * What a contributor with no resolvable name is called in a byline.
@@ -99,15 +98,17 @@ export function ContributorByline({
     );
   }
 
+  // The hover card is a client component, so this branch — and only this branch —
+  // crosses the server/client boundary. Everything above it stays server-rendered,
+  // which is what keeps a page of anonymous and private-profile bylines free of
+  // client JavaScript. The props are a string, a string, a string-or-null and a
+  // size union, all of which cross cleanly.
   return (
-    <span className="inline-flex items-center gap-1.5">
-      {avatar}
-      <span>
-        Shared by{" "}
-        <Link href={profilePath} className="hover:underline">
-          {label}
-        </Link>
-      </span>
-    </span>
+    <ContributorHoverCard
+      profilePath={profilePath}
+      name={label}
+      imageUrl={imageUrl}
+      avatarSize={avatarSize}
+    />
   );
 }

@@ -99,15 +99,16 @@ re-derive it wrongly somewhere, and the result is a link to a 404.
 
 ### The avatar is not part of that link
 
-The byline renders an `Avatar` beside the name. **The avatar is not a link, and
-that is deliberate.** `imageUrl` and `profilePath` arrive in the same contributor
-summary but answer different questions: the picture is *whose* this is, the path
-is *whether you may go there*. Making the face a second link to the same
-destination would put two tab stops per card for one place, and — the real
-problem — it would render a clickable face next to the name of somebody who set
-`isProfilePrivate`, which says "their profile is one click away" when the server
-has just said it is not. So the avatar is decorative (`alt=""`, `aria-hidden` on
-the initials fallback) and the name carries the link.
+The byline renders an `Avatar` beside the name, and when there is a
+`profilePath` it renders a `ContributorHoverCard` instead of a bare link. **The
+avatar is not a link, and that is deliberate.** `imageUrl` and `profilePath`
+arrive in the same contributor summary but answer different questions: the
+picture is *whose* this is, the path is *whether you may go there*. Making the
+face a second link to the same destination would put two tab stops per card for
+one place, and — the real problem — it would render a clickable face next to the
+name of somebody who set `isProfilePrivate`, which says "their profile is one
+click away" when the server has just said it is not. So the avatar is decorative
+(`alt=""`, `aria-hidden` on the initials fallback) and the name carries the link.
 
 A null `contributor` gets **no** avatar and no fallback circle. There is nobody
 to depict, and a grey disc standing in for an author the backend deliberately
@@ -119,6 +120,28 @@ accounts routinely have no uploaded picture, and both surfaces that rendered
 layout nobody can predict. Initials come from `initialsOf` in `lib/format.ts`
 rather than a generic glyph, because `A` says *which* person and a user icon only
 says *a* person.
+
+### The hover card fetches on hover, and only when there is a link
+
+`ContributorHoverCard` shows a bio and a contribution count. Neither is on
+`ContributorSummaryDto`, and adding them there would be a privacy bug: `bio` is
+gated behind profile privacy, so shipping it on every feed row would leak the bio
+of somebody who set `isProfilePrivate` — on a card whose `profilePath` is `null`
+precisely because the backend decided they are unreachable.
+
+So it reads `GET /users/:username`, which is already `@Public()`, already returns
+both fields, and already 404s a private profile for a non-owner. Hovering inherits
+the privacy rule instead of reimplementing it. Results are cached in a
+module-level `Map` keyed by resolved path, so the same contributor costs one
+request per session however many cards they appear on. Only successful reads are
+cached — a 404 must not be remembered as "this profile has no bio".
+
+**Only the linked branch crosses into the client.** `ContributorByline` stays a
+server component, so the anonymous and private-profile bylines on a page ship no
+client JavaScript at all. The four props that cross — `profilePath`, `name`,
+`imageUrl`, `avatarSize` — are all serialisable, which is what keeps this from
+being the server/client boundary change `pnpm typecheck` cannot see and
+`pnpm build` is the only verification for.
 
 ### Why `<img>` and not `next/image`
 
