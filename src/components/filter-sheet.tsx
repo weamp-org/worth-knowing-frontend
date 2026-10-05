@@ -154,8 +154,23 @@ export function FilterSheet({
         </Button>
       </SheetTrigger>
 
-      <SheetContent side="bottom">
-        <SheetHeader>
+      {/*
+        `max-h-[85dvh]` because `SheetContent` is `side="bottom"`, and that side is
+        `h-auto` — the sheet is exactly as tall as its contents, with no ceiling of
+        its own. Three selects, a title and a description do not fit a short phone,
+        so an uncapped sheet grew upwards off the top of the screen and took the
+        header with it. `dvh` rather than `vh` because mobile browser chrome makes
+        `vh` larger than the space actually on show, which is exactly the wrong
+        number to cap against; the rest of the screen stays visible underneath, so
+        it still reads as a sheet.
+      */}
+      <SheetContent side="bottom" className="max-h-[85dvh]">
+        {/*
+          `p-6` over the vendored `p-8`. Header, body and footer each carried 32px,
+          which stacked into 64px of nothing between the description and the first
+          control — for three dropdowns that is most of the panel.
+        */}
+        <SheetHeader className="p-6">
           <SheetTitle>Filters</SheetTitle>
           <SheetDescription>
             {hasQuery
@@ -165,13 +180,20 @@ export function FilterSheet({
         </SheetHeader>
 
         {/*
-          `flex-1 overflow-y-auto` rather than a fixed height. `SheetContent` is a
-          flex column sized to its own content, so the middle region takes the
-          slack and only scrolls if the controls plus a software keyboard exceed
-          what is left — which is what stops the footer carrying the Apply button
-          off the bottom of the screen.
+          `flex-1 overflow-y-auto` is what the cap above makes possible: a flex item's
+          automatic minimum size is its content size *unless* its overflow is not
+          `visible`, which this sets — so once the panel is capped, this region
+          absorbs the shortfall and scrolls while the header and footer stay put.
+
+          No top padding — `p-0` for the vendored `p-8` — because the header's own
+          bottom padding already spaces these controls off the description, and the
+          two were adding up.
+
+          `overscroll-contain` because a scroll region inside a fixed overlay will
+          otherwise chain its gesture to the page behind it, which is jarring on a
+          touch device.
         */}
-        <div className="flex flex-1 flex-col gap-5 overflow-y-auto p-8">
+        <div className="flex flex-1 flex-col gap-4 overflow-y-auto overscroll-contain p-0 px-6 pb-6">
           <FilterSelect
             id="sheet-type"
             label="Type"
@@ -207,24 +229,34 @@ export function FilterSheet({
           Apply is a plain button rather than a `SheetClose`, because that would
           discard the draft along with the panel. It navigates, and the navigation
           is what closes the sheet. Cancel is the real `SheetClose`.
+
+          **Two rows, not one.** These labels are styled small and wide-tracked, and
+          every `Button` is `shrink-0`, so `Reset`, `Cancel` and `Show results` in a
+          single row needed more width than a 375px phone has left after padding —
+          they simply ran off the right edge of the sheet. The two secondary actions
+          pair above, and the one that commits the draft gets the full width and the
+          only filled button, which is where the emphasis belongs anyway.
         */}
-        <SheetFooter className="flex-row gap-2">
-          <Button
-            variant="ghost"
-            className="mr-auto"
-            onClick={() => setDraft(cleared())}
-            disabled={
-              draft.type === ANY &&
-              draft.accessType === ANY &&
-              draft.sort === (hasQuery ? RELEVANCE : "newest")
-            }
-          >
-            Reset
+        <SheetFooter className="gap-2 border-t border-border p-4 px-6 pb-6">
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              variant="ghost"
+              onClick={() => setDraft(cleared())}
+              disabled={
+                draft.type === ANY &&
+                draft.accessType === ANY &&
+                draft.sort === (hasQuery ? RELEVANCE : "newest")
+              }
+            >
+              Reset
+            </Button>
+            <SheetClose asChild>
+              <Button variant="outline">Cancel</Button>
+            </SheetClose>
+          </div>
+          <Button className="w-full" onClick={apply}>
+            Show results
           </Button>
-          <SheetClose asChild>
-            <Button variant="outline">Cancel</Button>
-          </SheetClose>
-          <Button onClick={apply}>Show results</Button>
         </SheetFooter>
       </SheetContent>
     </Sheet>
