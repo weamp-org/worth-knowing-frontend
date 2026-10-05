@@ -81,8 +81,34 @@ Two things follow for this side of the wire:
   with zero-save rows under a "Most saved" heading.
 
 The heading is **"Most saved"**, never "Best". The count is a signal of interest,
-not of quality, and the heading is where that distinction is kept — see the next
-section for what the count itself is for.
+not of quality — see the next section.
+
+## The card shows the count; it does not let you save
+
+`ResourceCard` renders `savedCount` as a plain `<span>` reading "5 saved", and
+**not** the comment count. Both numbers already arrive on every resource response,
+so this is a rendering decision, not a fetching one.
+
+Three choices, all deliberate:
+
+- **Non-interactive.** The feed reports the count; the resource page is where you
+  save. Mounting `SaveButton` per card would mean ~20 client components and one
+  `GET /saved/:resourceId` each on every feed load, and the optimistic count
+  would go stale invisibly — saving in the feed updates that one card while other
+  cards showing the same resource keep the old number.
+- **The noun is spelled out.** `5` next to a bookmark glyph is a score; `5 saved`
+  is a sentence. The shorthand is how a count picks up an implied claim to
+  quality, and the point of showing it is to report *interest*.
+- **Hidden below 1.** "1 saved" is noise on a card, and "0 saved" is a
+  discouraging line under somebody's first contribution.
+
+`commentCount` is left off the card entirely, and that is a product ruling rather
+than an omission — see the backend's
+[comments doc](../worth-knowing-backend/docs/comments.md). A comment is a
+*reaction* to a `why`, so its count describes the conversation rather than the
+resource. That is honest attached to the thread itself, which is where the
+resource page puts it, and misleading in a feed, where a number next to a speech
+glyph reads as a quality score.
 
 ## The count comes from the response, not computed locally
 

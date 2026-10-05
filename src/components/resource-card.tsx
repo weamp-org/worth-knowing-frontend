@@ -77,8 +77,8 @@ export function ResourceCard({
         {getHostname(resource.url)}
       </a>
 
-      {/* `mt-auto` pins the byline to the bottom so the cards in a grid align
-          with each other regardless of how long each `why` runs. */}
+      {/* `mt-auto` pins the footer to the bottom so the cards in a grid align with
+          each other regardless of how long each `why` runs. */}
       <p
         className={
           dense
@@ -94,7 +94,49 @@ export function ResourceCard({
         {resource.tags.map((tag) => (
           <TagBadge key={tag.id} tag={tag} />
         ))}
+        <SavedCount resource={resource} />
       </div>
     </article>
+  );
+}
+
+/**
+ * How many people saved this, as a plain statement of fact.
+ *
+ * **Saved count only, and `commentCount` is deliberately absent** — see
+ * `worth-knowing-backend/docs/comments.md`. A comment is somebody's *reaction* to
+ * a `why`, so its count is evidence about the conversation around a resource
+ * rather than about the resource. That is fine attached to the thread it belongs
+ * to, which is where the resource page puts it, and wrong on a card: in the feed
+ * people scan rather than read, and a bare number next to a speech glyph reads as
+ * a quality score. Which is the "count of remarks, not a quality rating" line
+ * lost in translation — and worse than a most-commented rail ever would have
+ * been, because that confined the signal to one labelled section and this puts it
+ * on every card on the most-read surface on the site.
+ *
+ * **The noun is spelled out on purpose.** `5` next to a bookmark glyph is a score;
+ * `5 saved` is a sentence. The glyph-plus-number shorthand is exactly how a count
+ * acquires an implied claim to quality, and the whole point of showing it is to
+ * report interest rather than to rank.
+ *
+ * **Hidden below 1.** A lone `1 saved` is noise on a card, and `0 saved` is a
+ * discouraging thing to print under somebody's first contribution — the count is
+ * there to say "people came back for this", which is not a thing it can say about
+ * a resource nobody has saved.
+ *
+ * Non-interactive by design. The card is a server component and the count arrives
+ * free with the payload; making it a `SaveButton` would put 20 client components
+ * and 20 per-card `GET /saved/:resourceId` calls on the feed, and the optimistic
+ * count would go stale invisibly — saving in the feed would update that one card
+ * while every other copy of the same resource elsewhere on the page kept the old
+ * number. The feed reports the count; the resource page is where you save.
+ */
+function SavedCount({ resource }: { resource: Resource }) {
+  if (resource.savedCount < 1) return null;
+
+  return (
+    <span className="tabular-nums">
+      {resource.savedCount} {resource.savedCount === 1 ? "save" : "saves"}
+    </span>
   );
 }
