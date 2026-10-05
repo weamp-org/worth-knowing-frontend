@@ -71,8 +71,8 @@ src/
 │   ├── globals.css          # Tailwind v4 + shadcn theme tokens
 │   ├── layout.tsx           # Root layout (Clerk, ThemeProvider, header/footer)
 │   ├── (feed)/
-│   │   ├── page.tsx         # Resource feed (tag filter + pagination)
-│   │   └── loading.tsx      # Feed-only loading boundary
+│   │   ├── page.tsx         # Home: recent, most saved, surprise
+│   │   └── loading.tsx      # Home-only loading boundary
 │   ├── error.tsx            # Error boundary
 │   ├── not-found.tsx        # 404 page
 │   ├── contributors/        # Static "who works on this" page
@@ -101,8 +101,11 @@ src/
 │       └── edit/page.tsx    # Edit your own resource
 ├── components/
 │   ├── ui/                  # shadcn/ui (Biome-ignored, vendored)
-│   ├── resource-card.tsx    # One resource in the feed (isomorphic)
+│   ├── resource-card.tsx    # One resource; `dense` for rails (isomorphic)
 │   ├── resource-feed.tsx    # Feed + "Load more" (client)
+│   ├── resource-feed-empty.tsx # The three empty states (isomorphic)
+│   ├── home-section.tsx     # Labelled band; renders nothing when empty
+│   ├── surprise-me.tsx      # Pre-drawn random resource + reshuffle (client)
 │   ├── resource-actions.tsx # Edit/Remove on yours, Report on anyone else's (client)
 │   ├── share-resource-form.tsx  # Share/edit form (client)
 │   ├── search-box.tsx       # Search field + typeahead (client)

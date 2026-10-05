@@ -121,6 +121,66 @@ export async function getResource(
   return response.data;
 }
 
+/**
+ * How many rows the most-saved rail asks for by default.
+ *
+ * The backend defaults to the same number and caps it at 24, so this is only
+ * what the home page sends when it wants to be explicit. Mirrored rather than
+ * imported because the two repos are independently versioned with no shared
+ * types package — see the note at the top of `resource-types.ts`.
+ */
+export const TOP_SAVED_RAIL_SIZE = 6;
+
+/**
+ * The most-saved resources, for the home page rail.
+ *
+ * A **bare array**, not a `PaginatedResources`, and that is the backend's shape
+ * rather than an omission here. This ordering cannot page: the count it sorts by
+ * moves while somebody pages, which is exactly why `savedCount` is not a
+ * `ResourceSort`. So there is no `nextCursor`, no `facets`, and a `?cursor=` is
+ * a 400 rather than a silently ignored parameter.
+ *
+ * **Shorter than `limit` is normal, and an empty array is a real answer.** The
+ * backend excludes resources nobody has saved, so a rail over a young site with
+ * little saving returns nothing at all. The home page collapses the section in
+ * that case; padding it out would put a "Most saved" heading above resources with
+ * zero saves, which is a false statement rather than a thin section.
+ */
+export async function listMostSaved(
+  limit?: number,
+  signal?: AbortSignal,
+): Promise<Resource[]> {
+  const response = await api.get<Resource[]>("/resources/top-saved", {
+    ...(signal ? { signal } : {}),
+    params: limit ? { limit } : undefined,
+  });
+
+  return response.data;
+}
+
+/**
+ * One resource chosen at random, for "Surprise me" on the home page.
+ *
+ * Unfiltered and unranked by design: a random resource has no relationship to
+ * who is asking, so there is no cursor and no "more like this" — a second page
+ * of these would be six unrelated rows.
+ *
+ * **A 404 is expected and is not an error to surface.** It is the only thing the
+ * route returns when the site has no resources yet, and `api-error.ts` turns it
+ * into an ordinary rejected promise, so callers have to catch it. The home page
+ * renders its own empty state rather than treating the site being empty as a
+ * failure worth a toast.
+ */
+export async function getRandomResource(
+  signal?: AbortSignal,
+): Promise<Resource> {
+  const response = await api.get<Resource>("/resources/random", {
+    ...(signal ? { signal } : {}),
+  });
+
+  return response.data;
+}
+
 /** Backs the feed's tag filter. Omit `query` for the most-used tags. */
 export async function listTags(query?: string): Promise<TagSearchResult[]> {
   const response = await api.get<TagSearchResult[]>("/tags", {

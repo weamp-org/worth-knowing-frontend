@@ -1,19 +1,10 @@
 "use client";
 
-import { LibraryIcon, TagIcon } from "lucide-react";
-import Link from "next/link";
 import { useState } from "react";
 
 import { ResourceCard } from "@/components/resource-card";
+import { ResourceFeedEmpty } from "@/components/resource-feed-empty";
 import { Button } from "@/components/ui/button";
-import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty";
 import type { Resource } from "@/lib/resource-types";
 import { type ListResourcesParams, listResources } from "@/lib/resources-api";
 
@@ -81,51 +72,7 @@ export function ResourceFeed({
   }
 
   if (items.length === 0) {
-    /*
-     * Three distinct dead ends, worded differently on purpose. A search that
-     * matched nothing is the one a person is most likely to reach by accident — a
-     * typo, a tag that does not exist — so it names the query and says where it
-     * looked, rather than suggesting they share something.
-     */
-    const { q, tag, contributor } = filters ?? {};
-    const isFiltered = Boolean(q) || Boolean(tag) || Boolean(contributor);
-
-    const title = q
-      ? "Nothing matched"
-      : tag
-        ? "Nothing tagged with this yet"
-        : "Nothing shared yet";
-
-    const description = q
-      ? `No resource matched “${q}”. Search looks at titles, tags, and the reason somebody gave for sharing something.`
-      : tag
-        ? "No resource carries this tag so far."
-        : contributor
-          ? "This profile has no contributions that show a name. Anything shared anonymously is not listed, including for the person it belongs to."
-          : "Be the first to share something you found worth knowing.";
-
-    return (
-      <Empty className="border">
-        <EmptyHeader>
-          <EmptyMedia variant="icon">
-            {isFiltered ? <TagIcon /> : <LibraryIcon />}
-          </EmptyMedia>
-          <EmptyTitle>{title}</EmptyTitle>
-          <EmptyDescription>{description}</EmptyDescription>
-        </EmptyHeader>
-        <EmptyContent>
-          {isFiltered ? (
-            <Button asChild variant="outline">
-              <Link href="/browse">Browse everything</Link>
-            </Button>
-          ) : canShare ? (
-            <Button asChild>
-              <Link href="/share">Share something</Link>
-            </Button>
-          ) : null}
-        </EmptyContent>
-      </Empty>
-    );
+    return <ResourceFeedEmpty filters={filters} canShare={canShare} />;
   }
 
   return (

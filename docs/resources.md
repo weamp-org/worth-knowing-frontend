@@ -7,8 +7,8 @@ Server Components and client components falls where it does.
 
 | Route                  | Renders                     | Auth                        |
 | ---------------------- | --------------------------- | --------------------------- |
-| `/`                    | Feed, newest first          | Public                      |
-| `/?tag=<slug>`         | Feed filtered by tag        | Public                      |
+| `/`                    | Home: recent, most saved, surprise | Public              |
+| `/?tag=<slug>`         | Home with recent filtered by tag | Public              |
 | `/browse`              | Search and filter view      | Public                      |
 | `/resources/[id]`      | One resource                | Public                      |
 | `/resources/[id]/edit` | Edit form                   | Owner only                  |
@@ -264,10 +264,97 @@ the build would fail the whole build. It also means arriving at a resource page
 always re-fetches it, which is why the share form's `router.push` needs no
 `router.refresh()` behind it.
 
-### Cursor pagination
+### The home page
+
+`/` is three sections, and the composition is the whole design decision.
+
+### Recent, bounded to six
+
+The first section is the newest contributions, capped at `RECENT_SECTION_SIZE`
+(6) with no "Load more". The cap is a layout constraint, not a page size: the two
+sections below only exist if this one ends, and an unbounded list here would push
+them past an arbitrarily long scroll.
+
+The way onward is a link to `/browse` built with `browseHref({ tag })`, so the tag
+above it carries across and nothing about the view is lost by leaving. It renders
+**only when `nextCursor` is non-null** — the page fetches `limit + 1` and treats a
+non-null cursor as proof that row seven exists, which avoids a `COUNT(*)` and
+means a site with six resources in total is never offered a link to an empty page.
+
+This section renders `ResourceCard` directly on the server rather than mounting
+`ResourceFeed`. That is the one behavioural change to `/`: it used to accumulate
+pages in the client. The bounded list plus a link out is a better fit for a
+landing page, and `/browse` is already the paginated view.
+
+### Most saved
+
+`GET /resources/top-saved`, a fixed top-N with **no cursor**, laid out two-up with
+`ResourceCard dense`.
+
+Not a `ResourceSort`, and not reachable as one: the count it orders by moves while
+somebody pages, which is why `savedCount` is absent from that enum. See
+`worth-knowing-backend/docs/saved.md`.
+
+`dense` exists because a full-width feed row and a two-up grid want different
+amounts of `why` — three lines in the feed, two in the rail, since three in a grid
+makes every card a truncated block of equal height. `mt-auto` on the byline keeps
+the cards' footers aligned regardless of how long each `why` runs.
+
+**The section renders nothing when the response is empty.** The backend excludes
+resources nobody has saved, so `[]` is a real answer, and `HomeSection` takes
+optional `children` and returns `null` rather than rendering a heading over
+nothing. This is the case that made `children` optional: padding the rail with
+unsaved resources would put a "Most saved" heading above a row of zeros.
+
+The heading is **"Most saved"**, never "Best". The count says people came back for
+something, not that it is the strongest thing here, and that distinction is the
+backend's — losing it on the most-read surface on the site is not a wording
+preference.
+
+### Surprise me
+
+One resource at random, **drawn by the server and rendered as an ordinary card**,
+with a button asking for another.
+
+It was behind a click, and the button was a poor first impression: a section headed
+"Surprise me" whose only content was another button labelled "Surprise me" promised
+something without demonstrating any of it. The premise here is that the `why` is the
+value, so showing one immediately is the whole argument — and a control standing in
+for it is the product asking to be trusted before it has shown anything. A
+consequence worth having: this is now the only part of the home page that renders
+without JavaScript.
+
+One card rather than a grid of six, as originally briefed. Six random cards are
+skimmable by accident — the titles get taken in, the reasons go unread — and one
+cannot be. Also `LIMIT 1` rather than six rows.
+
+`getRandomResourceOrNull` returns `null` on a 404 and the section renders nothing.
+That is not only an empty-state decision: the fetch rides inside the page's
+`Promise.all`, and a 404 thrown from any member rejects the whole `all`, so an
+empty site would 500 the front page. Nulling it at the query boundary is what lets
+the section be optional without costing an extra round trip. The same reasoning as
+`getResourceReportsForViewer`, which nulls a 403.
+
+`SurpriseMe` is a client component for the reshuffle alone. The mechanism is
+`enabled: false` plus `initialData`, and **both halves matter**:
+
+- `enabled: false` stops the mount fetch. Without it the client draws its own
+  random resource on hydration and swaps out the card the server rendered — two
+  draws per page load, and a card changing under the reader.
+- `staleTime: Infinity` stops that draw being treated as stale, so enabling later
+  cannot trigger one either.
+
+`refetch()` is then the only thing that draws again. It is imperative, so it
+bypasses both `enabled` and `staleTime` and its result propagates to the observer —
+verified against the installed `@tanstack/query-core@5.101.1`, not assumed. The
+query key is stable rather than a counter: a key that changes per press retires the
+previous entry and blanks `data` mid-fetch, flashing the original card back before
+the next one lands.
+
+## Cursor pagination
 
 `GET /resources` is keyset-paginated and returns `{ items, nextCursor }`, not a
-bare array. The feed is the one client component in the read path:
+bare array. `ResourceFeed` is the client component that walks it:
 
 - The Server Component fetches page one and passes it down as props, so the feed
   is server-rendered on load.

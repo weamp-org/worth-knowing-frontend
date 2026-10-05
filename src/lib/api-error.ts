@@ -50,3 +50,21 @@ export function getApiErrorMessage(error: unknown, fallback: string): string {
 export function isForbidden(error: unknown): boolean {
   return axios.isAxiosError(error) && error.response?.status === 403;
 }
+
+/**
+ * Whether a request 404'd because the thing asked for does not exist.
+ *
+ * The third member of the same family as {@link isForbidden}, and for the same
+ * reason: "there is nothing here" is a state a page renders, not a fault worth
+ * throwing to the error boundary.
+ *
+ * Worth being careful about *which* 404, because they are not interchangeable.
+ * `GET /resources/random` returning 404 means the site has no resources at all —
+ * an empty state the home page draws nothing for. The same status from
+ * `GET /resources/:id` means that id is bad, and `getResourceOrNotFound` turns it
+ * into a 404 page instead. Swallowing both in one helper would render an empty
+ * home page for a mistyped id.
+ */
+export function isNotFound(error: unknown): boolean {
+  return axios.isAxiosError(error) && error.response?.status === 404;
+}

@@ -65,6 +65,25 @@ const [myCollections, isSaved] = userId
 a signed-out reader's markup contains neither control. `auth()` resolves during
 the render, so nothing ever appears late or corrects itself after hydration.
 
+## The most-saved rail, and what an empty one means
+
+`GET /resources/top-saved` feeds the home page rail — see `docs/resources.md` for
+the layout. `listMostSaved` returns a bare `Resource[]`, not a
+`PaginatedResources`, and that asymmetry is the backend's rather than an omission.
+
+Two things follow for this side of the wire:
+
+- **No `nextCursor`, no `facets`, no `filters` to carry.** There is no "load more"
+  on a rail.
+- **A short array is normal and `[]` is a real answer**, not a failure. The
+  backend excludes resources nobody has saved, so a young site returns nothing.
+  The home page renders no band at all in that case, rather than padding the rail
+  with zero-save rows under a "Most saved" heading.
+
+The heading is **"Most saved"**, never "Best". The count is a signal of interest,
+not of quality, and the heading is where that distinction is kept — see the next
+section for what the count itself is for.
+
 ## The count comes from the response, not computed locally
 
 `initialSavedCount` comes from `resource.savedCount`, which the backend puts on
