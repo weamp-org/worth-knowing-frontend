@@ -53,12 +53,35 @@ export function TagBadge({
   active = false,
   /** Overrides the filter URL, for the nav's "Everything" reset link. */
   href,
+  count,
   className,
   children,
 }: {
   tag: TagLike;
   active?: boolean;
   href?: string;
+  /**
+   * How many resources carry this tag, shown only where a count explains
+   * something.
+   *
+   * **Optional, and only the feed's tag nav passes it.** `GET /tags` has always
+   * returned `resourceCount` and the nav has always fetched all twenty rows
+   * without reading it, so this renders data that was already in the browser —
+   * no request, no schema change.
+   *
+   * It is on the nav and not on a card because of the type, before it is a
+   * matter of taste: `TagSummary` — the shape tags arrive in on a resource —
+   * carries no count at all. Putting one on a card would mean a lookup per tag
+   * per card, or widening the include on the most-read query on the site. That
+   * is also the better outcome: a number beside a chip in a feed people scan
+   * reads as a rating on the tag, which is what {@link SavedCount} exists to
+   * avoid.
+   *
+   * On the nav it earns its place for the opposite reason — the list is already
+   * sorted by usage, so the count is what explains the order. Without it, "why
+   * is `databases` above `writing`?" has no answer on the page.
+   */
+  count?: number;
   className?: string;
   children?: React.ReactNode;
 }) {
@@ -85,7 +108,50 @@ export function TagBadge({
           here so no call site can forget it. */}
       <Link href={href ?? `/?tag=${encodeURIComponent(tag.slug)}`}>
         {tag.name}
+        {typeof count === "number" ? <TagCount count={count} /> : null}
       </Link>
     </Badge>
+  );
+}
+
+/**
+ * The usage count inside a nav chip.
+ *
+ * **A bare numeral, not `3 resources`,** which is the opposite of what
+ * {@link SavedCount} argues for and is deliberate. A chip is a fixed small box —
+ * spelling out the noun would triple its width and wrap a twenty-chip nav onto
+ * three lines — and a bare number on a *tag* is not the hazard a bare number on
+ * a *resource* is. Nobody reads `databases 14` as a claim about how good
+ * databases are; the tag is a label the reader already understands, so the digit
+ * is read as metadata about the list they are scanning. On a card the same digit
+ * would sit beside a contribution and start implying a score.
+ *
+ * `tabular-nums` so a two-digit count does not shift the chips beside it, and
+ * `font-normal` so the count does not out-weigh the tag name it belongs to.
+ * The muted foreground is inherited, which keeps it in the chip's own state —
+ * selected chips grey their count along with their name.
+ *
+ * `aria-hidden` on the numeral with a spelled-out `sr-only` after it: a screen
+ * reader announcing "databases fourteen" gives a number with no noun, and this
+ * is decorative information beside a link whose destination already says how
+ * many there are. The `sr-only` span carries its own leading space so the two
+ * do not run together when read aloud.
+ */
+function TagCount({ count }: { count: number }) {
+  return (
+    <>
+      {/* The separating space is inside the numeral's own hidden span, so it is
+          hidden along with the number rather than being announced as a pause
+          between the tag name and the count. `&nbsp;` rather than a normal space
+          because the chip is `whitespace-nowrap` — a plain space here would be
+          the one thing allowed to wrap, putting the count on its own line. */}
+      <span aria-hidden="true" className="tabular-nums font-normal">
+        &nbsp;
+        {count}
+      </span>
+      <span className="sr-only">
+        {` ${count} ${count === 1 ? "resource" : "resources"}`}
+      </span>
+    </>
   );
 }

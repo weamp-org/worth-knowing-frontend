@@ -409,6 +409,20 @@ function spreadAcrossOwners(
 /**
  * The vocabulary, most-used first — `GET /tags` already sorts by usage, so
  * there is nothing to rank here.
+ *
+ * **Each chip carries its usage count,** which is the one place in the app a tag
+ * shows one. Two reasons it belongs here and not on a card: the list is already
+ * ordered by usage, so the number is what makes the order legible rather than
+ * arbitrary; and the cards cannot show one at all, because `TagSummary` — the
+ * shape tags arrive in on a resource — has no count in it. Adding one there
+ * would mean a lookup per tag per card, or widening the include on the most-read
+ * query on the site.
+ *
+ * The count is what makes the cap honest, too. `GET /tags` returns twenty rows
+ * no matter how large the vocabulary grows, so on a site with a thousand tags
+ * this list is a deliberate cut — and a number beside each chip is what tells a
+ * reader that a tag with 400 resources is not in here, rather than leaving them
+ * to assume it does not exist.
  */
 function TagFilter({
   tags,
@@ -430,7 +444,12 @@ function TagFilter({
         href="/"
       />
       {tags.map((tag) => (
-        <TagBadge key={tag.id} tag={tag} active={activeTag === tag.slug} />
+        <TagBadge
+          key={tag.id}
+          tag={tag}
+          active={activeTag === tag.slug}
+          count={tag.resourceCount}
+        />
       ))}
     </nav>
   );
