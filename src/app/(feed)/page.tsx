@@ -10,6 +10,7 @@ import { SearchBox } from "@/components/search-box";
 import { SurpriseMe } from "@/components/surprise-me";
 import { TagBadge } from "@/components/tag-badge";
 import { browseHref } from "@/lib/browse";
+import type { CollectionSummary } from "@/lib/collection-types";
 import { listPublicCollections } from "@/lib/collections-api";
 import { getRandomResourceOrNull } from "@/lib/resource-queries";
 import type { TagSearchResult } from "@/lib/resource-types";
@@ -50,6 +51,22 @@ const RECENT_SECTION_SIZE = 6;
  * card, and this is a section to glance at rather than to read down.
  */
 const COLLECTIONS_SECTION_SIZE = 4;
+
+/**
+ * How many collections to fetch for that section.
+ *
+ * Three times what it shows, because the section **dedupes by owner** — see
+ * {@link spreadAcrossOwners}. Fetching exactly four would make the diversity rule
+ * a no-op on any day when one curator published more than one, which is the exact
+ * case it exists for.
+ *
+ * Three is enough headroom rather than an arbitrary multiplier: it tolerates one
+ * curator taking a third of the recent slots, which on a young site is most of
+ * what happens, and a larger multiple starts returning older collections purely to
+ * find a fresh owner — trading a section about *recent* curation for one about
+ * nobody in particular.
+ */
+const COLLECTIONS_FETCH_SIZE = COLLECTIONS_SECTION_SIZE * 3;
 
 export default async function Home({
   searchParams,
@@ -96,11 +113,18 @@ export default async function Home({
       // Unfiltered, so this lists every public collection on the site. The backend
       // drops private ones in the query, so a private collection cannot reach this
       // list — asking for one would be asking for a list of 404s.
-      listPublicCollections({ limit: COLLECTIONS_SECTION_SIZE }),
+      //
+      // `COLLECTIONS_FETCH_SIZE`, not the section size: over-fetching is what gives
+      // `spreadAcrossOwners` something to spread.
+      listPublicCollections({ limit: COLLECTIONS_FETCH_SIZE }),
     ]);
 
   const hasMoreRecent = page.nextCursor !== null;
   const recent = page.items.slice(0, RECENT_SECTION_SIZE);
+  const collections = spreadAcrossOwners(
+    publicCollections.items,
+    COLLECTIONS_SECTION_SIZE,
+  );
 
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-10">
@@ -267,11 +291,15 @@ export default async function Home({
         what this section is. A second URL doing strictly less, and an invitation
         to attach a count later and build the ranked index that was declined.
 
-        **The known weakness is the firehose.** Newest-first means one prolific
-        curator can fill all four slots permanently and bury everybody else's,
-        and because the section is bounded nothing ever pushes them out. That is
-        the reason to keep it small rather than a reason to grow it into a browse
-        page without a real ranking signal.
+        **The firehose, and how it is handled.** Newest-first with nothing else
+        means one prolific curator takes every slot and keeps taking them, since
+        recency is the only ordering there is. `spreadAcrossOwners` caps that at one
+        collection per person, and the card now carries a byline so the
+        concentration would be *visible* even where the cap cannot help.
+
+        Both, because the cap alone is invisible: it just yields fewer cards with
+        no explanation, and a reader cannot tell whether the site has three curators
+        or one.
 
         Collapses when empty like every other section here — which is most sites
         at first, since a collection has to be made public before it can appear
@@ -282,12 +310,89 @@ export default async function Home({
         title="Recently collected"
         description="Groups of resources somebody kept together, and why."
       >
-        {publicCollections.items.map((collection) => (
+        {collections.map((collection) => (
           <CollectionCard key={collection.id} collection={collection} />
         ))}
       </HomeSection>
     </div>
   );
+}
+
+/**
+ * At most one collection per owner, newest first, up to `limit`.
+ *
+ * **The firehose fix.** `GET /collections` orders by `(createdAt DESC, id DESC)`
+ * and nothing else, so a curator who publishes several collections takes every
+ * slot in a bounded section and keeps taking them — nothing self-corrects, because
+ * recency is the only ordering there is. Four cards by one person is not a
+ * discovery surface.
+ *
+ * Implemented here rather than as `DISTINCT ON (owner_id)` in the backend query,
+ * and that placement is the point:
+ *
+ * - **The section is unpaginated by construction**, so the diversity rule needs no
+ *   cursor and does not have to change what one means. Putting it in the query
+ *   would change the *paginated* endpoint's cursor semantics to serve a section
+ *   that has no pages — the same trap `savedCount` is kept out of
+ *   `ResourceSort` to avoid.
+ * - No new raw SQL, and no new index to reason about, for a rule that exists
+ *   because of how this page composes a section.
+ *
+ * **It may return fewer than `limit`,** and that is the correct answer rather than
+ * a shortfall to pad: three curators with public collections is three cards. Four
+ * cards where one person wrote all four is worse than three.
+ *
+ * A collection whose owner has been deleted is kept, and never treated as a
+ * duplicate. `owner` is `null` for those, and a collection outlives its curator in
+ * the schema, so those rows are real and listable. They are rare — deleting an
+ * account cascades the collections away — and the rule that matters is *no person
+ * twice*, which has no meaning for an owner that is not there.
+ */
+function spreadAcrossOwners(
+  collections: CollectionSummary[],
+  limit: number,
+): CollectionSummary[] {
+  const seen = new Set<string>();
+  const spread: CollectionSummary[] = [];
+
+  for (const collection of collections) {
+    if (spread.length === limit) break;
+
+    /*
+     * Keyed on the display name, because that is the only stable handle the owner
+     * summary carries. `CollectionOwner` has no `id`, and that is deliberate — a
+     * collection is never anonymous, so there is no case where the owner is being
+     * withheld and a raw id would be the only handle left on them
+     * (`collections.service.ts`). It is not worth adding one to serve a
+     * de-duplication rule.
+     *
+     * `profilePath` would be the better key and is *not* used, because it is null
+     * for a private profile and an unclaimed handle — so every collection by a
+     * curator who keeps their profile private would pass as distinct, which is
+     * exactly the firehose this is fixing. Private curators are also the ones most
+     * likely to publish several collections.
+     *
+     * Two accounts sharing a display name are therefore treated as one person, so
+     * the section may show fewer cards than it has room for. That is the same
+     * failure mode as the short section and the same accepted trade: under-filling
+     * a four-card rail beats filling it with one voice.
+     *
+     * A collection whose owner was deleted has no name at all, so it is never
+     * treated as a duplicate. Those rows are rare — deleting an account cascades
+     * its collections away — and the rule that matters is *no person twice*, which
+     * has no meaning for an owner that is not there.
+     */
+    const ownerName = collection.owner?.name;
+
+    if (ownerName) {
+      if (seen.has(ownerName)) continue;
+      seen.add(ownerName);
+    }
+
+    spread.push(collection);
+  }
+
+  return spread;
 }
 
 /**

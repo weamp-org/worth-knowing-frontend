@@ -336,9 +336,14 @@ ordered by recency, which is exactly what this section is. A second URL doing
 strictly less, and an invitation to attach a count later and build the ranked index
 that was declined.
 
-**The known weakness is the firehose.** One prolific curator can hold all four
-slots permanently and bury everybody else's, and nothing ever pushes them out.
-That is the argument for keeping it small, not an argument for growing it.
+**One collection per owner, and the section may be shorter than its slot count.**
+Chronological means a prolific curator takes every slot and keeps taking them, so
+the page de-dupes by owner after fetching three times what it shows. Implemented
+here rather than as `DISTINCT ON` in the query: this section is unpaginated, and
+changing the *paginated* endpoint's cursor semantics to serve a section with no
+pages is the trap `savedCount` is kept out of `ResourceSort` to avoid.
+`CollectionCard` carries a byline too — without one the concentration is invisible.
+See `docs/collections.md` for why de-duping keys on display name.
 
 ### Surprise me
 

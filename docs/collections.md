@@ -174,10 +174,40 @@ caller, so somebody who followed a link to somebody else's public collection lan
 on their own list — empty, with no sign the thing they came for exists. The page
 now says where public collections actually surface.
 
-The weakness of the chronological section is the firehose: one prolific curator
-can hold every slot permanently and nothing pushes them out. That is the reason to
-keep it at four, and the reason not to grow it into a browse page without a real
-ranking signal.
+## The firehose, and the two things that address it
+
+`GET /collections` orders by `(createdAt DESC, id DESC)` and nothing else, so a
+curator who publishes several collections takes every slot in a bounded section and
+keeps taking them. Recency is the only ordering there is, so nothing self-corrects.
+
+Two changes, and **both are needed** — the cap alone is invisible:
+
+- **One collection per owner** (`spreadAcrossOwners`, in the home page). Fetch 12,
+  keep the first 4 from 4 different curators.
+- **A byline on `CollectionCard`.** Without it, four collections by one person look
+  like four collections by four people, so the concentration cannot be *seen* — which
+  is worse than the concentration itself, because nobody can tell it is happening.
+  The cap does not help there: it just makes the section quietly shorter, and a
+  reader cannot tell that from the site having three curators.
+
+**The cap lives in the page, not the query.** The section is unpaginated by
+construction, so a diversity rule needs no cursor. Expressing it as
+`DISTINCT ON (owner_id)` would change what the *paginated* endpoint's cursor means,
+to serve a section that has no pages — the trap `savedCount` is kept out of
+`ResourceSort` to avoid. No new raw SQL, no new index.
+
+**It de-dupes on display name,** which is a compromise worth knowing about.
+`CollectionOwner` carries no `id` and that is deliberate — a collection is never
+anonymous, so there is no case where the owner is withheld and a raw id would be
+the only handle left on them (`collections.service.ts`). `profilePath` would be a
+better key but is `null` for a private profile and an unclaimed handle, so every
+collection by a curator who keeps their profile private would pass as distinct —
+the exact firehose being fixed. So two accounts sharing a display name count as one
+person, and the section may show fewer than four. Under-filling a rail beats filling
+it with one voice.
+
+**A section shorter than its slot count is correct.** Three curators with public
+collections is three cards.
 
 ## Not built, on purpose
 
