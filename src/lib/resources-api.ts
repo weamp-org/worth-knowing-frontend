@@ -38,6 +38,17 @@ export interface ListResourcesParams {
   contributor?: string;
   /** Opaque cursor from a previous page's `nextCursor`. */
   cursor?: string;
+  /**
+   * Asks the response for a smaller page, to drive a suggestion list rather than a
+   * feed.
+   *
+   * The payload is the whole resource — contributor join, tags, the `why` — so this
+   * is the knob that decides how much a keystroke costs. The ranked endpoint is
+   * reused rather than a lighter `/suggest` route added, which is what buys the
+   * anonymity redaction for free; the cost is that this is heavier than a
+   * suggestion list strictly needs. Drop it if typeahead payloads ever show up as a
+   * problem.
+   */
   limit?: number;
   /**
    * Free text, matched against titles, tag names and `why`.

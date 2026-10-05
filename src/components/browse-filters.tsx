@@ -15,6 +15,7 @@ import {
 } from "@/lib/browse";
 import type {
   AccessType,
+  ResourceFacets,
   ResourceSort,
   ResourceType,
 } from "@/lib/resource-types";
@@ -43,11 +44,20 @@ export function BrowseFilters({
   sort,
   /** Whatever else is active, so changing one control does not clear the rest. */
   carry,
+  /**
+   * Counts for the two facets, from the same response as the page they sit above.
+   *
+   * Optional because both call sites can render before a count exists, and because
+   * a caller that never has them should get plain labels rather than a row of
+   * zeroes — a real `0` and an absent count are different answers.
+   */
+  facets,
 }: {
   type?: ResourceType;
   accessType?: AccessType;
   sort?: ResourceSort;
   carry?: Omit<BrowseParams, "type" | "accessType" | "sort">;
+  facets?: ResourceFacets;
 }) {
   const router = useRouter();
 
@@ -64,7 +74,7 @@ export function BrowseFilters({
         label="Type"
         className="w-40"
         value={type ?? ANY}
-        options={typeOptions()}
+        options={typeOptions(facets?.byType)}
         onChange={(value) => apply({ type: chosen<ResourceType>(value) })}
       />
 
@@ -73,7 +83,7 @@ export function BrowseFilters({
         label="Access"
         className="w-40"
         value={accessType ?? ANY}
-        options={accessOptions()}
+        options={accessOptions(facets?.byAccessType)}
         onChange={(value) => apply({ accessType: chosen<AccessType>(value) })}
       />
 

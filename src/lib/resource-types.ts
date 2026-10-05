@@ -158,6 +158,28 @@ export interface Resource {
 export interface PaginatedResources {
   items: Resource[];
   nextCursor: string | null;
+  /**
+   * How many resources match, per filterable facet.
+   *
+   * **Every enum member is present**, including those with no matches: a facet at
+   * zero is a real answer, and omitting it would make an option disappear exactly
+   * when someone is deciding whether it is worth clicking.
+   *
+   * **Each facet ignores its own filter.** With `type=BOOK` active, `byType.ARTICLE`
+   * counts articles matching the rest of the query, not `(0)`. A self-excluding
+   * count would be true, would answer nothing, and would make the dropdown useless
+   * precisely when it is being used to change its mind.
+   *
+   * In the same response as the page it describes rather than a separate call: a
+   * count and the list beside it have to be true of the same moment, and two
+   * requests could straddle a delete and disagree with no way to tell which is lying.
+   */
+  facets: ResourceFacets;
+}
+
+export interface ResourceFacets {
+  byType: Record<ResourceType, number>;
+  byAccessType: Record<AccessType, number>;
 }
 
 /**

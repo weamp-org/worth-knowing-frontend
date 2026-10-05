@@ -166,6 +166,50 @@ and the only one that can arrive from somewhere other than the keyboard.
 pages. Neither was caught by the build — both type-check, both compile, and both
 are only wrong once clicked.
 
+### Facet counts live on the listing response, not on their own request
+
+`GET /resources` returns `facets: { byType, byAccessType }` alongside `items`, and
+the Type and Access dropdowns render them: `Book (4)`, `Article (0)`.
+
+**Same response, deliberately.** A count and the list it describes have to be true
+of the same moment. Two requests could straddle a delete and disagree — leaving a
+dropdown promising four books above a list showing three, with no way for a reader
+to tell which is lying. One response is one snapshot.
+
+**Each facet's counts ignore that facet's own filter.** With `type=BOOK` active,
+`byType.ARTICLE` counts articles matching the rest of the query, not `(0)`. A
+self-excluding count is technically true, answers nothing, and makes the dropdown
+useless precisely when it is being used to change its mind. So each of the two
+groupings drops one filter: the type grouping keeps `accessType`, the accessType
+grouping keeps `type`.
+
+`Any type (24)` sums the row, which is the total with no filter of that kind — the
+question the dropdown's first row is actually asking. Because the counts exclude
+their own filter, the sum cannot double-count.
+
+**Every enum member is present, including the zeros.** A facet at zero is a real
+answer, and omitting it would make an option vanish exactly when someone is
+deciding whether it is worth clicking. Zeros are shown and stay clickable: you may
+genuinely want to see an empty Article list.
+
+A missing count and a real `0` are rendered differently on purpose — plain label
+versus `Label (0)`. They are different answers, and rendering them identically would
+make the first lie. That is why `typeOptions()`/`accessOptions()` take an optional
+`counts` rather than defaulting to zero.
+
+`FilterSheet` takes the counts as a prop rather than fetching its own: it stages
+changes until "Show results", so a self-fetch would describe the pre-Apply view.
+
+### Still no result count on the page
+
+The "Filtering this view" line is unchanged and still carries no number. Only one
+page is loaded, so a count *there* would be the page size rather than the size of
+the result set, and saying "20 results" for a thousand matches is a small lie.
+
+The facet totals are a different thing and are honest — `facets` counted the whole
+matching set, not the rows that happen to be on screen. That distinction is the
+whole reason the dropdowns can show numbers where the page cannot.
+
 ### Relevance is the absence of `sort`
 
 The backend has no `sort=relevance` — relevance is what you get from `q` with no

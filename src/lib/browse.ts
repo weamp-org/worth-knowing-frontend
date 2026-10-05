@@ -6,6 +6,7 @@ import {
   RESOURCE_SORTS,
   RESOURCE_TYPE_LABELS,
   RESOURCE_TYPES,
+  type ResourceFacets,
   type ResourceSort,
   type ResourceType,
 } from "@/lib/resource-types";
@@ -62,25 +63,58 @@ export function sortOptions(
  * on mobile — and a list written twice is a filter one of them forgets. Adding a
  * member to an enum in `@/lib/resource-types` puts it in both.
  */
-export function typeOptions(): { value: string; label: string }[] {
+/**
+ * The option lists, with counts when the response carried them.
+ *
+ * `counts` is `undefined` while a count is unavailable — before the first response,
+ * or on a caller that does not fetch them — and the label is then plain. That
+ * distinction is worth keeping rather than defaulting to `0`: a real `(0)` tells
+ * somebody the option matches nothing, while a missing count tells them nothing.
+ * Rendering both the same way would make the first lie.
+ *
+ * "Any type" is given the **total across the facet**, so it answers the question the
+ * dropdown's first row is actually asking: how many results am I looking at with no
+ * filter at all. Because each facet's counts exclude that facet's own filter, summing
+ * the row does not double-count anything.
+ */
+export function typeOptions(
+  counts?: ResourceFacets["byType"],
+): { value: string; label: string }[] {
   return [
-    { value: ANY, label: "Any type" },
+    { value: ANY, label: withCount("Any type", totalOf(counts)) },
     ...RESOURCE_TYPES.map((value) => ({
       value,
-      label: RESOURCE_TYPE_LABELS[value],
+      label: withCount(RESOURCE_TYPE_LABELS[value], counts?.[value]),
     })),
   ];
 }
 
 /** The access control's options, "any" first. See {@link typeOptions}. */
-export function accessOptions(): { value: string; label: string }[] {
+export function accessOptions(
+  counts?: ResourceFacets["byAccessType"],
+): { value: string; label: string }[] {
   return [
-    { value: ANY, label: "Any" },
+    { value: ANY, label: withCount("Any", totalOf(counts)) },
     ...ACCESS_TYPES.map((value) => ({
       value,
-      label: ACCESS_TYPE_LABELS[value],
+      label: withCount(ACCESS_TYPE_LABELS[value], counts?.[value]),
     })),
   ];
+}
+
+function withCount(label: string, count?: number): string {
+  return count === undefined ? label : `${label} (${count})`;
+}
+
+/**
+ * The facet's total, or `undefined` when no count is available.
+ *
+ * `Object.values` rather than a hand-written sum, so a `ResourceType` added to the
+ * enum cannot be forgotten here and quietly leave the total short.
+ */
+function totalOf(counts?: Record<string, number>): number | undefined {
+  if (!counts) return undefined;
+  return Object.values(counts).reduce((sum, count) => sum + count, 0);
 }
 
 /**

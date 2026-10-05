@@ -28,6 +28,7 @@ import {
 } from "@/lib/browse";
 import type {
   AccessType,
+  ResourceFacets,
   ResourceSort,
   ResourceType,
 } from "@/lib/resource-types";
@@ -72,11 +73,22 @@ export function FilterSheet({
   accessType,
   sort,
   carry,
+  /**
+   * Counts for the two facets.
+   *
+   * Passed straight through rather than re-fetched, for the reason the whole facet
+   * lives on the listing response: a count fetched by the sheet could disagree with
+   * the list it is describing, and this sheet stages its changes until "Show
+   * results" anyway — so a count that re-read the current URL would describe the
+   * pre-Apply view.
+   */
+  facets,
 }: {
   type?: ResourceType;
   accessType?: AccessType;
   sort?: ResourceSort;
   carry?: Omit<BrowseParams, "type" | "accessType" | "sort">;
+  facets?: ResourceFacets;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -198,7 +210,7 @@ export function FilterSheet({
             id="sheet-type"
             label="Type"
             value={draft.type}
-            options={typeOptions()}
+            options={typeOptions(facets?.byType)}
             onChange={(value) =>
               setDraft((current) => ({ ...current, type: value }))
             }
@@ -208,7 +220,7 @@ export function FilterSheet({
             id="sheet-access"
             label="Access"
             value={draft.accessType}
-            options={accessOptions()}
+            options={accessOptions(facets?.byAccessType)}
             onChange={(value) =>
               setDraft((current) => ({ ...current, accessType: value }))
             }

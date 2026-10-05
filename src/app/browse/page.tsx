@@ -101,12 +101,21 @@ export default async function BrowsePage({
         selects push the results off-screen and make the list jump on each pick,
         so it collapses to a trigger and a sheet.
       */}
+      {/*
+        Counts come from the listing response rather than a request of their own.
+
+        The whole point of a facet count is that you can trust it, and two requests
+        could straddle a save or a delete and disagree — leaving a dropdown promising
+        four books above a list showing three, with no way to tell which is lying.
+        One response is one snapshot.
+      */}
       <div className="mt-6 hidden sm:block">
         <BrowseFilters
           type={type}
           accessType={accessType}
           sort={sort}
           carry={{ q, tag }}
+          facets={page.facets}
         />
       </div>
 
@@ -122,16 +131,22 @@ export default async function BrowsePage({
           accessType={accessType}
           sort={sort}
           carry={{ q, tag }}
+          facets={page.facets}
         />
       </div>
 
       {isFiltered ? (
         <p className="mt-6 text-sm text-muted-foreground">
           {/*
-            Deliberately not a result count. Only one page is loaded, so the number
-            on screen is the page size rather than the size of the result set, and
-            saying "Showing 20 results" for a thousand matches is a small lie that
-            is worse than saying nothing.
+            Still deliberately not a result count, and the reason is unchanged: only
+            one page is loaded, so a number here would be the page size rather than
+            the size of the result set, and saying "20 results" for a thousand
+            matches is a small lie that is worse than saying nothing.
+
+            What *is* shown is the per-facet totals inside the filter dropdowns, and
+            those are honest — `page.facets` counted the whole matching set, not the
+            rows that happen to be on screen. `Any type (24)` is a real count of real
+            matches.
           */}
           Filtering this view.{" "}
           <Link
