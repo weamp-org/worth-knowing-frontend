@@ -140,7 +140,7 @@ src/
 │   ├── comments-api.ts      # Typed calls to the comment endpoints
 │   ├── comment-types.ts     # Hand-maintained mirror of the comment DTOs
 │   ├── report-dialog.tsx    # Shared report dialog, for a resource or a comment
-│   ├── use-is-admin.ts      # Caller's own role, for the header's moderation link
+│   ├── use-my-profile.ts    # Caller's own profile: role + profile link (client)
 │   ├── tag-slug.ts            # Client mirror of the backend's tag folding
 │   ├── username.ts            # Client mirror of the backend's username rules
 │   ├── contributor.tsx        # How a contributor is described, and their byline

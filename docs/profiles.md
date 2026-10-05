@@ -112,19 +112,37 @@ reads. Treat a missing `role` as *unknown*, never as `USER`: on your own read th
 backend reports `USER` explicitly rather than omitting it, so a client branching on
 `role === "ADMIN"` never has to tell an absent field from a real answer.
 
-Two consumers, both in `docs/comments.md`:
+Consumers:
 
-- `useIsAdmin()` fetches it from the browser and drives the header's **Moderation**
-  item, rendered only for admins.
+- **`useMyProfile()`** fetches it from the browser and drives two header items: the
+  **Moderation** item, rendered only when `role === "ADMIN"`, and the **Your
+  profile** item, rendered only when the profile has a public URL. One request
+  answers both; `useIsAdmin()` survives as a thin wrapper over it.
 - `/moderation` checks it after `auth.protect()` and before fetching any queue.
 
-`useIsAdmin` deliberately does **not** read the role in the root layout. The layout is
-shared by every route, so `auth()` there would make the whole app dynamic — including
-`/contributors`, which prerenders. One small authenticated call per page load is the
-better trade, and the shared Axios instance already carries the token in the browser.
+`useMyProfile` deliberately does **not** read the profile in the root layout. The
+layout is shared by every route, so `auth()` there would make the whole app dynamic —
+including `/contributors`, which prerenders. One small authenticated call per page
+load is the better trade, and the shared Axios instance already carries the token in
+the browser.
 
-A failure resolves to `false` rather than throwing. This drives a header link, and an
-error boundary over the header would take down the page over a menu item.
+A failure resolves to `null` rather than throwing. This drives header menu items, and
+an error boundary over the header would take down the page over a menu item.
+
+## The profile link is conditional, and `/u/` is not always reachable
+
+`HeaderMenu` links to **`/u/<usernameLower>`, only when the server would resolve
+one.** `resolveProfilePath` returns `null` for a private profile and for an unclaimed
+handle, and `/u/:username` 404s for somebody whose profile is private — **including
+for them** — so a link built on the username alone would be a dead end in the one
+place that must not have one.
+
+This mirrors the rule every byline already follows: link when there is a resolved
+path, render nothing when there is not. Absent rather than disabled, for the same
+reason Moderation is.
+
+The missing-handle case is not a gap here: `/settings/profile` is where a handle gets
+claimed, and Settings is the last item in that menu.
 
 ---
 

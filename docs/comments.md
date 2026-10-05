@@ -269,10 +269,14 @@ in front of every signed-in reader on a product that has no other admins yet.
 **Absent, not disabled.** A greyed-out Moderation reads as "not allowed" and invites
 the reader to work out why.
 
-`useIsAdmin` fetches `GET /users/me/profile` from the browser rather than reading the
+`useMyProfile` fetches `GET /users/me/profile` from the browser rather than reading the
 role in the root layout, and that is deliberate: the layout is shared by every route,
 so `auth()` there would make the whole app dynamic — including `/contributors`, which
 prerenders. One small authenticated call per page load is a much better trade.
+
+The same response also carries the handle, which is what the header's **Your profile**
+item links to — so this menu asks the backend one question, not two. See
+[profiles.md](./profiles.md#the-profile-link-is-conditional-and-u-is-not-always-reachable).
 
 A failure resolves to `false` rather than throwing. This drives a header link, and an
 error boundary over the header would take down the page to complain about a menu item.
