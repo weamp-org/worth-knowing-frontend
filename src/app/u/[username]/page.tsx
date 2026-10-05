@@ -2,6 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { Avatar } from "@/components/avatar";
 import { CollectionCard } from "@/components/collection-card";
 import { ResourceFeed } from "@/components/resource-feed";
 import { Badge } from "@/components/ui/badge";
@@ -82,20 +83,11 @@ export default async function ProfilePage({
     <div className="mx-auto w-full max-w-3xl px-4 py-10">
       <header className="flex flex-col gap-4">
         <div className="flex items-center gap-4">
-          {profile.imageUrl ? (
-            // A plain `<img>`, not `next/image`. The URL is whatever host a
-            // person connected to Clerk uploaded to, so `next/image` would
-            // reject it without a `remotePatterns` entry per possible host —
-            // and a remote pattern that admits everything defeats the point of
-            // the optimiser. Decorative, since the display name below is the
-            // real heading.
-            // biome-ignore lint/performance/noImgElement: see above
-            <img
-              src={profile.imageUrl}
-              alt=""
-              className="size-16 rounded-full object-cover"
-            />
-          ) : null}
+          <Avatar
+            imageUrl={profile.imageUrl}
+            name={profile.name ?? handle}
+            size="lg"
+          />
 
           <div className="flex flex-col gap-1">
             <h1 className="font-heading text-4xl font-semibold tracking-wide">

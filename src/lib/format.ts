@@ -87,3 +87,42 @@ export function getHostname(url: string): string {
     return url;
   }
 }
+
+/**
+ * The letters that stand in for a person who has no picture.
+ *
+ * The first letter of the first word and the first of the last, so `Ada Lovelace`
+ * reads `AL` and a single-word name reads `A`. Drawn from the *display name*,
+ * which is why it works for an account whose Clerk name is missing — by the time
+ * a byline renders, the backend has already fallen back to the claimed handle.
+ *
+ * **Deterministic on purpose**, for the reason the rest of this file is: the feed
+ * renders on the server and in the browser, and a mismatch is a hydration error.
+ * `toUpperCase` is locale-independent; `toLocaleUpperCase` is not, and a
+ * capital-I that differs by the machine's locale would be exactly that bug.
+ *
+ * `Array.from` rather than `[0]`, so an initial outside the basic multilingual
+ * plane is not cut in half by a surrogate pair. `Intl.Segmenter` would handle
+ * full grapheme clusters, but it is not available in every runtime this renders
+ * in, and a combining accent is not worth the determinism risk.
+ *
+ * Returns `null` for a name with nothing in it, so the caller can decide between
+ * showing nothing and showing a generic figure — a blank circle is worse than
+ * either.
+ */
+export function initialsOf(name: string | null | undefined): string | null {
+  if (!name) return null;
+
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  const first = words[0];
+  if (!first) return null;
+
+  const last = words.length > 1 ? words[words.length - 1] : undefined;
+  const letters = [first, last]
+    .filter(Boolean)
+    .map((word) => Array.from(word as string)[0])
+    .filter(Boolean)
+    .join("");
+
+  return letters ? letters.toUpperCase() : null;
+}

@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { Avatar } from "@/components/avatar";
+
 /**
  * What a contributor with no resolvable name is called in a byline.
  *
@@ -45,35 +47,67 @@ export function contributorLabel(resource: {
  * That is the whole rule: `profilePath` is a string, link; null, plain text. It
  * is deliberately not re-derived here from separate privacy fields, because a
  * client that gets that wrong produces a link to a 404.
+ *
+ * **The avatar is not part of that link, and that is deliberate.** `imageUrl` and
+ * `profilePath` come from the same contributor summary, but they answer different
+ * questions: the picture is *whose* this is, the path is *whether you may go
+ * there*. Making the avatar a second link to the same place would mean two tab
+ * stops per card for one destination, and — worse — it would put a clickable
+ * face next to a name for somebody who set `isProfilePrivate`, which reads as
+ * "their profile is one click away" when the server has just said it is not. So
+ * the face is decorative and the name carries the link, exactly as before.
+ *
+ * The avatar does not appear for a null `contributor` at all, and there is no
+ * fallback for that case. An anonymous contribution has no author to depict, and
+ * a grey circle standing in for one would imply a person the backend has
+ * deliberately withheld.
  */
 export function ContributorByline({
   resource,
+  avatarSize = "sm",
 }: {
   resource: {
     contributor: {
       name: string | null;
+      imageUrl: string | null;
       profilePath: string | null;
     } | null;
     isAnonymous: boolean;
   };
+  /**
+   * The card footer is `text-xs` next to `text-xs`; the resource page's is
+   * `text-sm`. One component, two densities — so the size is the caller's to
+   * pick, defaulting to the one used in more places.
+   */
+  avatarSize?: "sm" | "md";
 }) {
   if (!resource.contributor) {
     return <span>{contributorLabel(resource)}</span>;
   }
 
-  const { name, profilePath } = resource.contributor;
+  const { name, imageUrl, profilePath } = resource.contributor;
   const label = name ?? UNNAMED_CONTRIBUTOR;
 
+  const avatar = <Avatar imageUrl={imageUrl} name={name} size={avatarSize} />;
+
   if (!profilePath) {
-    return <span>Shared by {label}</span>;
+    return (
+      <span className="inline-flex items-center gap-1.5">
+        {avatar}
+        <span>Shared by {label}</span>
+      </span>
+    );
   }
 
   return (
-    <span>
-      Shared by{" "}
-      <Link href={profilePath} className="hover:underline">
-        {label}
-      </Link>
+    <span className="inline-flex items-center gap-1.5">
+      {avatar}
+      <span>
+        Shared by{" "}
+        <Link href={profilePath} className="hover:underline">
+          {label}
+        </Link>
+      </span>
     </span>
   );
 }

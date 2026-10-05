@@ -45,7 +45,7 @@ export function AccountDetails() {
       <div className="flex items-center gap-3">
         {user?.imageUrl ? (
           // A 40px circle from a Clerk-hosted CDN, where the optimizer earns
-          // nothing and would need a remote pattern per possible host.
+          // nothing — see the `Avatar` doc comment for the full argument.
           // biome-ignore lint/performance/noImgElement: see above
           <img
             src={user.imageUrl}

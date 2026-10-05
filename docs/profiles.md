@@ -97,6 +97,57 @@ it from, because `usernameLower` and `isProfilePrivate` are deliberately absent
 from the response. That is the point: a client asked to re-derive the rule will
 re-derive it wrongly somewhere, and the result is a link to a 404.
 
+### The avatar is not part of that link
+
+The byline renders an `Avatar` beside the name. **The avatar is not a link, and
+that is deliberate.** `imageUrl` and `profilePath` arrive in the same contributor
+summary but answer different questions: the picture is *whose* this is, the path
+is *whether you may go there*. Making the face a second link to the same
+destination would put two tab stops per card for one place, and — the real
+problem — it would render a clickable face next to the name of somebody who set
+`isProfilePrivate`, which says "their profile is one click away" when the server
+has just said it is not. So the avatar is decorative (`alt=""`, `aria-hidden` on
+the initials fallback) and the name carries the link.
+
+A null `contributor` gets **no** avatar and no fallback circle. There is nobody
+to depict, and a grey disc standing in for an author the backend deliberately
+withheld would imply a person who is not there.
+
+`Avatar` always renders a circle, showing initials when there is no image. Clerk
+accounts routinely have no uploaded picture, and both surfaces that rendered
+`imageUrl` before `Avatar` existed rendered *nothing* in that case — a hole in the
+layout nobody can predict. Initials come from `initialsOf` in `lib/format.ts`
+rather than a generic glyph, because `A` says *which* person and a user icon only
+says *a* person.
+
+### Why `<img>` and not `next/image`
+
+Worth writing down because the obvious-sounding reason is **wrong**, and it was
+carried in three code comments before it was checked.
+
+The claim was that Clerk avatars come from arbitrary upload hosts, so
+`remotePatterns` could not admit them. It is false. Clerk proxies every picture
+through a single host, and the URL says so — the final path segment is a base64
+payload that decodes to the origin:
+
+```
+https://img.clerk.com/eyJ0eXBlIjoicHJveHkiLCJzcmMiOiJodHRwczovL2ltYWdlcy5jbGVyay5kZXYvb2F1dC...
+  -> {"type":"proxy","src":"https://images.clerk.dev/oauth_google/img_..."}
+```
+
+So Google, GitHub and direct uploads all arrive via `img.clerk.com`, and one
+`remotePatterns` entry covers every case. `next.config.ts` could enable it
+tomorrow.
+
+The reason to skip it is **size**. These are 24–64px circles from a CDN already
+serving a device-appropriate image. `next/image` would route each through
+`/_next/image` on this server, which fetches from Clerk and re-encodes — an extra
+hop and some CPU for a file of roughly the same size. The optimiser earns nothing
+at this scale.
+
+It stops being true if avatars grow: a 128px header or a contributor grid is
+where resizing pays for the hop. Revisit then, not now.
+
 The same reasoning is behind `isOwner`. The profile response carries no
 identifier to compare against, so the backend decides ownership and the page
 renders an edit link only when that flag is true.

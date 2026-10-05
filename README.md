@@ -105,6 +105,7 @@ src/
 │   ├── resource-feed.tsx    # Feed + "Load more" (client)
 │   ├── resource-feed-empty.tsx # The three empty states (isomorphic)
 │   ├── home-section.tsx     # Labelled band; renders nothing when empty
+│   ├── avatar.tsx           # Picture, or initials where there is none (isomorphic)
 │   ├── surprise-me.tsx      # Pre-drawn random resource + reshuffle (client)
 │   ├── resource-actions.tsx # Edit/Remove on yours, Report on anyone else's (client)
 │   ├── share-resource-form.tsx  # Share/edit form (client)
@@ -127,7 +128,7 @@ src/
 │   ├── api.ts               # Axios instance + auth interceptor
 │   ├── auth-token-setter.tsx # Clerk JWT → Axios interceptor
 │   ├── api-error.ts         # Backend error → human-readable message
-│   ├── format.ts            # Deterministic date/host formatting
+│   ├── format.ts            # Deterministic date/host/initials formatting
 │   ├── resource-types.ts    # Types mirroring the backend's resource/profile DTOs
 │   ├── resource-form-schema.ts # Zod schema mirroring CreateResourceDto
 │   ├── collection-types.ts  # Types mirroring the backend's collection DTOs
@@ -143,7 +144,7 @@ src/
 │   ├── use-my-profile.ts    # Caller's own profile: role + profile link (client)
 │   ├── tag-slug.ts            # Client mirror of the backend's tag folding
 │   ├── username.ts            # Client mirror of the backend's username rules
-│   ├── contributor.tsx        # How a contributor is described, and their byline
+│   ├── contributor.tsx        # How a contributor is described, and their byline + avatar/hover card
 │   ├── settings-api.ts        # Your own preferences
 │   ├── profile-api.ts         # Profiles
 │   ├── profile-form-schema.ts # Zod schema mirroring UpdateMyProfileDto

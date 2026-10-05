@@ -150,7 +150,7 @@ export default async function ResourcePage({
       </section>
 
       <footer className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-        <ContributorByline resource={resource} />
+        <ContributorByline resource={resource} avatarSize="md" />
         {resource.tags.map((tag) => (
           <TagBadge key={tag.id} tag={tag} />
         ))}
