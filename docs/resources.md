@@ -60,6 +60,95 @@ and the right order for a new query is usually relevance. Keeping a title sort
 across a fresh search would show the matches alphabetically because of a choice
 made for a different question.
 
+### The typeahead layers on top of that rather than replacing it
+
+`SearchBox` is also a combobox. It is strictly additive: the form, the submit
+button, Enter-with-nothing-highlighted and the browser's own affordances all
+behave exactly as they did before the dropdown existed.
+
+It is backed by **the ordinary `GET /resources?q=`** with `limit: 8`, so there is
+no new endpoint and the ranking is the same one `/browse` shows. Redaction comes
+along for free, because `listResources` is the same call the feed makes — an
+anonymous contribution arrives already stripped of its contributor. A narrower
+suggest endpoint would have to earn that deliberately.
+
+Accepted cost: each keystroke ships up to eight *whole* resources, contributor
+join and `why` included. Worth revisiting only if volume or payload actually
+shows up as a problem. Related: the global throttle is 100 req/min tracked by
+`req.user?.id ?? req.ip`, so all anonymous visitors share one bucket and a
+typeahead is a 10–12x amplification. Left alone for now, deliberately.
+
+**Enter means two different things, and that is the whole design.** With a row
+highlighted it goes to `/resources/:id`; with nothing highlighted it runs the
+search and lands on `/browse?q=`. So `highlighted` starts at `NO_HIGHLIGHT` (`-1`)
+rather than `0` — defaulting to `0` would make the very first Enter on a fresh
+query jump to a resource nobody picked. Changing the query resets the highlight
+back to `NO_HIGHLIGHT`, which is what restores the second meaning.
+
+The trailing **"See all results"** row exists so the search destination is one
+click rather than keyboard-only. It targets the same URL as a bare Enter, so the
+two are interchangeable rather than subtly different paths.
+
+### Why the typeahead debounces harder than `TagInput`
+
+`TagInput` waits 200ms, this waits **300ms**, and the minimum query is **three**
+characters rather than two.
+
+The two lists are not siblings despite looking like it. A tag is a short controlled
+vocabulary you are confirming an exact name for, so the answer is worth having
+immediately. Search is exploratory — you type, misjudge, backspace, revise — and
+the backend allows 100 requests a minute **tracked by `req.user?.id ?? req.ip`**,
+so every signed-out visitor behind one wifi draws from a shared bucket. Requests
+only fire once typing has paused past the delay, so raising it is the cheapest way
+to send materially fewer.
+
+Three characters is also where the backend's fuzzy matching becomes available at
+all, since `word_similarity` needs a trigram. Below that a needle degenerates into
+`ILIKE '%a%'` over the whole corpus — slow, and matching most of the site, so noise
+rather than help — and skipping it saves the first request or two of every search.
+
+**The throttle was left alone deliberately.** 100/min is what stands between a
+bored person and a script, and nobody has hit it yet. If throttling ever does
+show up, the signature is *suggestions going empty while `/browse` still loads* —
+the frontend swallows lookup failures, so it presents as a dropdown that quietly
+declines to appear. The fix is already decided: a route-specific allowance for
+search, following the `PUBLIC_WRITE_THROTTLE` pattern in the backend's
+`throttle.ts` applied to reads. Targeted, leaves the global limit tight.
+
+A lighter `GET /resources/suggest` would **not** be the fix for this — it cuts
+payload per request, not the number of requests. Different problem.
+
+### Why the suggestions go through TanStack Query
+
+Because search queries get revised and an effect cannot know what it has already
+asked for. Typing `mach`, backspacing to `mac` and fixing it should not spend a
+second request on an answer the backend has already given, and going back over
+covered ground fills in instantly with no spinner. The provider's 30s `staleTime`
+is exactly that window, so nothing is overridden.
+
+Tags mostly get typed once and confirmed, which is why `TagInput` gets away with a
+bare `setTimeout` and this cannot.
+
+Stale data is explicitly discarded rather than shown while a new key resolves:
+TanStack keeps the previous page visible, which is right elsewhere and wrong here,
+because it would list `mach` results under a box that now says `machine`. The
+request also takes an `AbortSignal`, so superseded lookups are cancelled instead of
+competing for the connection.
+
+
+A failed lookup is swallowed. Free text has always worked, so a network blip must
+not turn the field into a dead end.
+
+Rows are plain text plus the resource type, deliberately **not** `Badge` — `Badge`
+is 10px uppercase tracked-out label styling, too loud at dropdown size and reading
+as a status rather than a kind of thing. Same reasoning as `TagBadge`'s note.
+
+The ARIA is `TagInput`'s verbatim: `role="combobox"` on the input, a
+`div role="listbox"` below it (a `ul` carrying an interactive role is invalid
+semantics), `tabIndex={-1}` options so Tab leaves the field, `onMouseDown` to beat
+the blur that `onClick` would lose to, and `aria-activedescendant` because focus
+never enters the list.
+
 ### Anything holding state needs a `key` when the URL can change underneath it
 
 `SearchBox` keeps its value in `useState(defaultValue)`. A changed prop does not
@@ -194,9 +283,9 @@ Browser validation stays on (`required`, `type="url"`). The shadcn demo
 disables it deliberately to show off schema errors; the docs recommend against
 that in real code.
 
-`TagInput` is a plain chip input, not a typeahead. The backend has `GET /tags`
-ready for one — it is also what backs the feed's filter pills — and the share form
-now uses it. See below.
+The site now has two typeaheads — `SearchBox` over resources and `TagInput` over
+tags. They deliberately share a debounce, a minimum length and an ARIA pattern, so
+they feel like one input; see above and below.
 
 ## Tags
 

@@ -63,8 +63,18 @@ export interface ListResourcesParams {
 
 export async function listResources(
   params: ListResourcesParams = {},
+  /**
+   * An `AbortSignal`, passed through to axios.
+   *
+   * For the search typeahead, which fires a request per settled query: by the time
+   * the fourth one is in flight the first three are already stale, and aborting
+   * them frees the connection rather than leaving them to compete for it and
+   * arrive out of order. Optional, so every other caller is unaffected.
+   */
+  signal?: AbortSignal,
 ): Promise<PaginatedResources> {
   const response = await api.get<PaginatedResources>("/resources", {
+    ...(signal ? { signal } : {}),
     // Send nothing rather than `undefined`, so axios leaves absent params out
     // of the query string entirely. `q` is included in that rule: an empty
     // `q` is omitted, which is what makes clearing the box mean "stop searching"

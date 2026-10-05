@@ -105,6 +105,7 @@ src/
 │   ├── resource-feed.tsx    # Feed + "Load more" (client)
 │   ├── resource-actions.tsx # Edit/Remove on yours, Report on anyone else's (client)
 │   ├── share-resource-form.tsx  # Share/edit form (client)
+│   ├── search-box.tsx       # Search field + typeahead (client)
 │   ├── tag-input.tsx        # Tag typeahead + chips (client)
 │   ├── anonymity-toggle.tsx # Per-resource anonymity switch (client)
 │   ├── anonymity-setting.tsx# Standing preference switch (client)
