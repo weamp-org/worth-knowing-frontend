@@ -1,8 +1,10 @@
 import {
+  ACCESS_TYPE_LABELS,
   ACCESS_TYPES,
   type AccessType,
   RESOURCE_SORT_LABELS,
   RESOURCE_SORTS,
+  RESOURCE_TYPE_LABELS,
   RESOURCE_TYPES,
   type ResourceSort,
   type ResourceType,
@@ -48,6 +50,35 @@ export function sortOptions(
     ...RESOURCE_SORTS.map((value) => ({
       value,
       label: RESOURCE_SORT_LABELS[value],
+    })),
+  ];
+}
+
+/**
+ * The type control's options, "any" first.
+ *
+ * All three option lists live here rather than beside either control, because
+ * `/browse` renders the same filters in two places — a row on desktop and a sheet
+ * on mobile — and a list written twice is a filter one of them forgets. Adding a
+ * member to an enum in `@/lib/resource-types` puts it in both.
+ */
+export function typeOptions(): { value: string; label: string }[] {
+  return [
+    { value: ANY, label: "Any type" },
+    ...RESOURCE_TYPES.map((value) => ({
+      value,
+      label: RESOURCE_TYPE_LABELS[value],
+    })),
+  ];
+}
+
+/** The access control's options, "any" first. See {@link typeOptions}. */
+export function accessOptions(): { value: string; label: string }[] {
+  return [
+    { value: ANY, label: "Any" },
+    ...ACCESS_TYPES.map((value) => ({
+      value,
+      label: ACCESS_TYPE_LABELS[value],
     })),
   ];
 }
