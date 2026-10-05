@@ -286,6 +286,10 @@ This section renders `ResourceCard` directly on the server rather than mounting
 pages in the client. The bounded list plus a link out is a better fit for a
 landing page, and `/browse` is already the paginated view.
 
+Each card carries a read-only `savedCount` — see `docs/saved.md` for why it is
+non-interactive, why the noun is spelled out, and why `commentCount` is not on the
+card at all.
+
 ### Most saved
 
 `GET /resources/top-saved`, a fixed top-N with **no cursor**, laid out two-up with
