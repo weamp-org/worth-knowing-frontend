@@ -128,10 +128,21 @@ export default async function Home({
 
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-10">
-      <h1 className="font-heading text-4xl font-semibold tracking-wide">
-        Worth Knowing
-      </h1>
-      <p className="mt-3 text-muted-foreground">
+      {/*
+        No `h1`.
+
+        The header already carries the wordmark as a link to `/`, so a heading
+        repeating it says the same thing twice on every page load — and worse than
+        the repetition, it looked like a heading while behaving like a control, in
+        the one position on the page where a heading is expected.
+
+        The tagline stays. It is the only place the product's premise is stated in
+        words, it is not in the footer, and without it the page opens straight into
+        a search box with nothing saying what is being searched. It is now the
+        first thing on the page, so the `py-10` on the container is doing all the
+        top spacing that the title block used to.
+      */}
+      <p className="text-muted-foreground">
         Discover things worth knowing, from people who found them worth knowing.
       </p>
 
