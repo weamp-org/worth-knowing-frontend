@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 
 /** Outbound link to the parent project. */
@@ -16,17 +15,7 @@ export function SiteFooter() {
     <footer className="border-t border-border">
       {/* Same width as the header and the feed, so the left edges line up. */}
       <div className="mx-auto flex w-full max-w-3xl flex-col gap-2 px-4 py-6 text-sm text-muted-foreground">
-        <p className="flex items-center gap-1.5">
-          {/* Decorative, as in the header: the text beside it names the site. */}
-          <Image
-            src="/icon-192x192.png"
-            alt=""
-            width={16}
-            height={16}
-            className="size-4"
-          />
-          &copy; {new Date().getFullYear()} Worth Knowing
-        </p>
+        <p>&copy; {new Date().getFullYear()} Worth Knowing</p>
 
         <p>
           Built by{" "}
