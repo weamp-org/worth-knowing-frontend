@@ -34,6 +34,15 @@ export function SiteFooter() {
             open-source contributors
           </Link>
         </p>
+
+        <nav aria-label="Legal" className="flex flex-wrap gap-x-4 gap-y-1">
+          <Link href="/privacy" className="hover:text-foreground">
+            Privacy Policy
+          </Link>
+          <Link href="/terms" className="hover:text-foreground">
+            Terms of Service
+          </Link>
+        </nav>
       </div>
     </footer>
   );
