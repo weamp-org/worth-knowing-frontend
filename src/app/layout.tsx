@@ -1,4 +1,6 @@
 import { ClerkProvider } from "@clerk/nextjs";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Instrument_Serif, Inter } from "next/font/google";
 
@@ -132,6 +134,8 @@ export default function RootLayout({
                 </main>
                 <SiteFooter />
                 <Toaster />
+                <Analytics />
+                <SpeedInsights />
               </AuthTokenSetter>
             </QueryProvider>
           </ClerkProvider>
