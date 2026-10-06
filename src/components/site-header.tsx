@@ -30,7 +30,7 @@ export function SiteHeader() {
             alt=""
             width={24}
             height={24}
-            className="size-6 rounded-[6px]"
+            className="size-6"
           />
           Worth Knowing
         </Link>

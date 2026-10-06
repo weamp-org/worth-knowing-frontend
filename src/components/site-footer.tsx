@@ -23,7 +23,7 @@ export function SiteFooter() {
             alt=""
             width={16}
             height={16}
-            className="size-4 rounded-[4px]"
+            className="size-4"
           />
           &copy; {new Date().getFullYear()} Worth Knowing
         </p>
