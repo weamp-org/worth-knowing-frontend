@@ -1,6 +1,7 @@
 "use client";
 
 import { Show, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
+import Image from "next/image";
 import Link from "next/link";
 
 import { HeaderMenu } from "@/components/header-menu";
@@ -17,8 +18,20 @@ export function SiteHeader() {
             onto two lines when the controls beside it need the room. */}
         <Link
           href="/"
-          className="shrink-0 whitespace-nowrap font-heading text-lg font-normal tracking-wide hover:underline"
+          className="flex shrink-0 items-center gap-2 whitespace-nowrap font-heading text-lg font-normal tracking-wide hover:underline"
         >
+          {/*
+            Decorative: the wordmark text beside it already names the site, so
+            this carries an empty alt rather than repeating "Worth Knowing" to
+            a screen reader twice.
+          */}
+          <Image
+            src="/icon-192x192.png"
+            alt=""
+            width={24}
+            height={24}
+            className="size-6 rounded-[6px]"
+          />
           Worth Knowing
         </Link>
 
