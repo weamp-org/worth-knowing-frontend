@@ -244,7 +244,7 @@ async function TagResourceList({
     <div>
       <div>
         {page.items.map((resource) => (
-          <ResourceCard key={resource.id} resource={resource} />
+          <ResourceCard key={resource.id} resource={resource} source="tag" />
         ))}
       </div>
 

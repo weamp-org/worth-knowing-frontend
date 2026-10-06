@@ -26,6 +26,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { trackCollectionCreated } from "@/lib/analytics";
 import { getApiErrorMessage } from "@/lib/api-error";
 import {
   type CollectionFormValues,
@@ -81,6 +82,16 @@ export function CollectionForm({ collection }: { collection?: Collection }) {
       const saved = collection
         ? await updateCollection(collection.id, values)
         : await createCollection(values);
+
+      // Creations only, after success. Edits and the title/description they
+      // carry are never sent to analytics.
+      if (!collection) {
+        trackCollectionCreated({
+          collectionId: saved.id,
+          isPrivate: values.isPrivate,
+          hadDescription: values.description.trim().length > 0,
+        });
+      }
 
       toast.success(isEditing ? "Collection updated." : "Collection created.");
 

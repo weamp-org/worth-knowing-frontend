@@ -6,6 +6,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { trackResourceAddedToCollection } from "@/lib/analytics";
 import { getApiErrorMessage } from "@/lib/api-error";
 import type { CollectionSummary } from "@/lib/collection-types";
 import {
@@ -76,6 +77,8 @@ export function CollectionPicker({
         toast.success("Removed from the collection.");
       } else {
         await addResourceToCollection(collectionId, resourceId);
+        // Adds only, after success. Removals are not tracked.
+        trackResourceAddedToCollection({ collectionId, resourceId });
         toast.success("Saved to the collection.");
       }
     } catch (error) {

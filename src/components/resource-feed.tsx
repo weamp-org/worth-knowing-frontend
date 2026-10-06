@@ -5,6 +5,7 @@ import { useState } from "react";
 import { ResourceCard } from "@/components/resource-card";
 import { ResourceFeedEmpty } from "@/components/resource-feed-empty";
 import { Button } from "@/components/ui/button";
+import type { DiscoverySource } from "@/lib/analytics";
 import type { Resource } from "@/lib/resource-types";
 import { type ListResourcesParams, listResources } from "@/lib/resources-api";
 
@@ -33,6 +34,7 @@ export function ResourceFeed({
   initialNextCursor,
   filters,
   canShare,
+  source = "direct",
 }: {
   initialItems: Resource[];
   initialNextCursor: string | null;
@@ -47,6 +49,8 @@ export function ResourceFeed({
   filters?: ListResourcesParams;
   /** Whether to offer the share call to action in the empty state. */
   canShare: boolean;
+  /** Which surface this listing is, for discovery attribution. */
+  source?: DiscoverySource;
 }) {
   const [items, setItems] = useState(initialItems);
   const [nextCursor, setNextCursor] = useState(initialNextCursor);
@@ -78,7 +82,7 @@ export function ResourceFeed({
   return (
     <div>
       {items.map((item) => (
-        <ResourceCard key={item.id} resource={item} />
+        <ResourceCard key={item.id} resource={item} source={source} />
       ))}
 
       {error ? (

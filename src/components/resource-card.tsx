@@ -1,7 +1,10 @@
-import Link from "next/link";
-
+import {
+  DiscoveryLink,
+  OutboundResourceLink,
+} from "@/components/discovery-link";
 import { TagBadge } from "@/components/tag-badge";
 import { Badge } from "@/components/ui/badge";
+import type { DiscoverySource } from "@/lib/analytics";
 import { ContributorByline } from "@/lib/contributor";
 import { formatDate, getHostname } from "@/lib/format";
 import {
@@ -24,10 +27,16 @@ import {
 export function ResourceCard({
   resource,
   dense = false,
+  /**
+   * Which surface this card is listed on. Recorded when the reader follows the
+   * card to the resource, so views attribute to the listing they came from.
+   */
+  source = "direct",
 }: {
   resource: Resource;
   /** Renders the narrower rail variant. */
   dense?: boolean;
+  source?: DiscoverySource;
 }) {
   return (
     <article
@@ -63,19 +72,24 @@ export function ResourceCard({
             : "font-heading text-xl font-semibold tracking-wide"
         }
       >
-        <Link href={`/resources/${resource.id}`} className="hover:underline">
+        <DiscoveryLink
+          href={`/resources/${resource.id}`}
+          source={source}
+          className="hover:underline"
+        >
           {resource.title}
-        </Link>
+        </DiscoveryLink>
       </h2>
 
-      <a
-        href={resource.url}
-        target="_blank"
-        rel="noopener noreferrer"
+      <OutboundResourceLink
+        url={resource.url}
+        resourceId={resource.id}
+        location="card"
+        source={source}
         className="w-fit text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground"
       >
         {getHostname(resource.url)}
-      </a>
+      </OutboundResourceLink>
 
       {/* `mt-auto` pins the footer to the bottom so the cards in a grid align with
           each other regardless of how long each `why` runs. */}

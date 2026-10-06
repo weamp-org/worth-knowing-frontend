@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { setDiscoverySource } from "@/lib/analytics";
 import { type BrowseParams, browseHref } from "@/lib/browse";
 import {
   RESOURCE_TYPE_LABELS,
@@ -257,6 +258,9 @@ export function SearchBox({
 
   function openResource(resourceId: string) {
     closeSuggestions();
+    // A suggestion pick leads straight to the resource, bypassing `/browse`,
+    // so the attribution is recorded here rather than by a listing.
+    setDiscoverySource("search");
     // Leave the text in the box. `/browse` keys on `q` and will remount anyway,
     // and on a route that does not remount it, a box still showing the query that
     // led here is right rather than a stale suggestion list sitting under it.

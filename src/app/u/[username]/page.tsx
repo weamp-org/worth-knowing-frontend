@@ -265,6 +265,7 @@ export default async function ProfilePage({
           initialNextCursor={resources.nextCursor}
           filters={{ contributor: handle }}
           canShare={userId !== null}
+          source="profile"
         />
       </div>
     </div>

@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { trackCommentAdded } from "@/lib/analytics";
 import { getApiErrorMessage } from "@/lib/api-error";
 import {
   COMMENT_REASON_LABELS,
@@ -216,6 +217,10 @@ function CommentComposer({
         resourceId,
         parentId ? { body: body.trim(), parentId } : { body: body.trim() },
       );
+
+      // After success. The body and any quoted parent text stay out of
+      // analytics — only that a comment or a reply was posted.
+      trackCommentAdded({ resourceId, isReply: parentId !== undefined });
 
       // Cleared rather than kept, so a second comment is a fresh thought rather than
       // the first one again by accident.

@@ -74,7 +74,7 @@ export function SurpriseMe({ initialResource }: { initialResource: Resource }) {
         so a reshuffle that fails leaves the reader looking at a real resource
         rather than an error box.
       */}
-      <ResourceCard resource={data} />
+      <ResourceCard resource={data} source="surprise" />
 
       {/*
         Below the card rather than above it. Above, it is a control for something

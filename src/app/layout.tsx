@@ -4,6 +4,7 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Instrument_Serif, Inter } from "next/font/google";
 
+import { AnalyticsIdentity } from "@/components/analytics-identity";
 import { QueryProvider } from "@/components/query-provider";
 import { ServiceWorkerRegistration } from "@/components/service-worker-registration";
 import { SiteFooter } from "@/components/site-footer";
@@ -147,6 +148,7 @@ export default function RootLayout({
                 <SiteFooter />
                 <Toaster />
                 <ServiceWorkerRegistration />
+                <AnalyticsIdentity />
                 <Analytics />
                 <SpeedInsights />
               </AuthTokenSetter>

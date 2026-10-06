@@ -33,6 +33,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { trackResourceContributed } from "@/lib/analytics";
 import { getApiErrorMessage } from "@/lib/api-error";
 import {
   type ResourceFormValues,
@@ -114,6 +115,18 @@ export function ShareResourceForm({
       const saved = resource
         ? await updateResource(resource.id, values)
         : await createResource(values);
+
+      // Creations only, after success. Edits fire nothing, and the title, url,
+      // `why`, and tag names being submitted stay out of analytics — only the
+      // kind of thing, how many tags, and whether it was shared anonymously.
+      if (!resource) {
+        trackResourceContributed({
+          resourceId: saved.id,
+          resourceType: values.type,
+          tagCount: values.tags.length,
+          isAnonymous: values.isAnonymous,
+        });
+      }
 
       toast.success(isEditing ? "Resource updated." : "Thanks for sharing.");
 

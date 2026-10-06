@@ -99,7 +99,7 @@ export function CollectionResourceFeed({
   return (
     <div>
       {items.map((item) => (
-        <ResourceCard key={item.id} resource={item} />
+        <ResourceCard key={item.id} resource={item} source="collection" />
       ))}
 
       {error ? (

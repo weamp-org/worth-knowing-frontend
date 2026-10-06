@@ -2,6 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { AnalyticsSetting } from "@/components/analytics-setting";
 import { AnonymitySetting } from "@/components/anonymity-setting";
 import { ThemeSetting } from "@/components/theme-setting";
 import { Button } from "@/components/ui/button";
@@ -64,6 +65,10 @@ export default async function SettingsPage() {
         <Separator />
 
         <ThemeSetting />
+
+        <Separator />
+
+        <AnalyticsSetting />
 
         <Separator />
 

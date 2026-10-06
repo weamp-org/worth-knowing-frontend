@@ -77,7 +77,11 @@ export default async function SavedPage() {
           </Empty>
         ) : (
           items.map((resource) => (
-            <ResourceCard key={resource.id} resource={resource} />
+            <ResourceCard
+              key={resource.id}
+              resource={resource}
+              source="saved_list"
+            />
           ))
         )}
       </div>

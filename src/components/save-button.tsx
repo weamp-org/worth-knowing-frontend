@@ -5,6 +5,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { trackResourceSaved, trackResourceUnsaved } from "@/lib/analytics";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { saveResource, unsaveResource } from "@/lib/saved-api";
 
@@ -60,6 +61,14 @@ export function SaveButton({
       const resource = wasSaved
         ? await unsaveResource(resourceId)
         : await saveResource(resourceId);
+
+      // Fires only after the write succeeds — never on the optimistic flip
+      // above, and never on the rollback below.
+      if (wasSaved) {
+        trackResourceUnsaved(resourceId);
+      } else {
+        trackResourceSaved(resourceId);
+      }
 
       // The server's count is authoritative — somebody else may have saved it
       // in the meantime, so it is taken rather than computed locally.

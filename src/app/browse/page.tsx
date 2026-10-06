@@ -6,6 +6,7 @@ import { BrowseFilters } from "@/components/browse-filters";
 import { FilterSheet } from "@/components/filter-sheet";
 import { ResourceFeed } from "@/components/resource-feed";
 import { SearchBox } from "@/components/search-box";
+import { SearchPerformedTracker } from "@/components/search-performed-tracker";
 import { TagBadge } from "@/components/tag-badge";
 import { browseHref, parseBrowseParams } from "@/lib/browse";
 import { listResources, listTags } from "@/lib/resources-api";
@@ -130,6 +131,14 @@ export default async function BrowsePage({
   ]);
 
   const isFiltered = Boolean(q || tag || type || accessType || sort);
+
+  /*
+   * Discovery attribution for resource clicks from this listing: a query
+   * means search, a tag means tag, anything else is plain browse. Decided from
+   * the parsed params, so a hand-edited `?type=BANANA` counts as what it
+   * renders as, not what the URL said.
+   */
+  const listingSource = q ? "search" : tag ? "tag" : "browse";
 
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-10">
@@ -256,6 +265,28 @@ export default async function BrowsePage({
       ) : null}
 
       <div className="mt-6">
+        {/*
+          Fires `search_performed` once for a committed search render. The raw
+          query never leaves the client — only its length bucket travels — and
+          the total comes from the listing facets (the whole matching set),
+          not the page size. Filter-only views mount nothing.
+        */}
+        {q ? (
+          <SearchPerformedTracker
+            key={browseHref(params)}
+            queryLength={q.trim().length}
+            hasTagFilter={Boolean(tag)}
+            hasTypeFilter={Boolean(type)}
+            hasAccessFilter={Boolean(accessType)}
+            resultCount={Object.values(page.facets.byType).reduce(
+              (sum, count) => sum + count,
+              0,
+            )}
+            sort={sort ?? "relevance"}
+            isAuthenticated={userId !== null}
+            dedupeKey={browseHref(params)}
+          />
+        ) : null}
         <ResourceFeed
           /*
            * Remounted whenever any filter changes, so accumulated pages are
@@ -268,6 +299,7 @@ export default async function BrowsePage({
           initialNextCursor={page.nextCursor}
           filters={params}
           canShare={userId !== null}
+          source={listingSource}
         />
       </div>
     </div>

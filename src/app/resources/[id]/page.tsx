@@ -2,7 +2,9 @@ import { auth } from "@clerk/nextjs/server";
 import type { Metadata } from "next";
 import { CollectionPicker } from "@/components/collection-picker";
 import { CommentSection } from "@/components/comment-section";
+import { OutboundResourceLink } from "@/components/discovery-link";
 import { ResourceActions } from "@/components/resource-actions";
+import { ResourceViewTracker } from "@/components/resource-view-tracker";
 import { SaveButton } from "@/components/save-button";
 import { TagBadge } from "@/components/tag-badge";
 import { Badge } from "@/components/ui/badge";
@@ -139,6 +141,14 @@ export default async function ResourcePage({
 
   return (
     <article className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-10">
+      {/*
+        Fires `resource_viewed` once. Mounted here, so a 404 or a failed load
+        fires nothing — there is no tracker to mount.
+      */}
+      <ResourceViewTracker
+        resourceId={resource.id}
+        isAuthenticated={userId !== null}
+      />
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
         <Badge variant="secondary">{RESOURCE_TYPE_LABELS[resource.type]}</Badge>
         {resource.accessType !== "UNKNOWN" ? (
@@ -157,16 +167,22 @@ export default async function ResourcePage({
 
       <div className="flex flex-wrap items-center gap-3">
         <Button asChild>
-          <a href={resource.url} target="_blank" rel="noopener noreferrer">
+          <OutboundResourceLink
+            url={resource.url}
+            resourceId={resource.id}
+            location="detail"
+          >
             Open resource
-          </a>
+          </OutboundResourceLink>
         </Button>
-        <a
-          href={resource.url}
+        <OutboundResourceLink
+          url={resource.url}
+          resourceId={resource.id}
+          location="detail"
           className="text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground"
         >
           {getHostname(resource.url)}
-        </a>
+        </OutboundResourceLink>
         <ResourceActions
           resourceId={resource.id}
           title={resource.title}

@@ -223,7 +223,11 @@ export default async function Home({
           <>
             <div>
               {recent.map((resource) => (
-                <ResourceCard key={resource.id} resource={resource} />
+                <ResourceCard
+                  key={resource.id}
+                  resource={resource}
+                  source="feed"
+                />
               ))}
             </div>
 
@@ -271,7 +275,12 @@ export default async function Home({
         {mostSaved.length > 0 ? (
           <div className="grid gap-4 sm:grid-cols-2">
             {mostSaved.map((resource) => (
-              <ResourceCard key={resource.id} resource={resource} dense />
+              <ResourceCard
+                key={resource.id}
+                resource={resource}
+                dense
+                source="feed"
+              />
             ))}
           </div>
         ) : null}
