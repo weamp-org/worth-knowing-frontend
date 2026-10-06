@@ -26,6 +26,33 @@ const nextConfig: NextConfig = {
   reactCompiler: true,
 
   /**
+   * The service worker must never be served stale.
+   *
+   * Browsers check `/sw.js` for updates on navigation, but an HTTP-cached copy
+   * satisfies that check without ever reaching the server — so a worker update
+   * would silently never deploy to installed apps. `no-cache` still allows
+   * storage but forces revalidation, which is the correct posture for a file
+   * whose whole job is to be the freshest thing on the origin.
+   *
+   * Scoped to `/sw.js` only. Nothing else here needs header overrides, and a
+   * blanket `/(.*)` security-headers block is a separate concern, not a
+   * prerequisite for installation.
+   */
+  async headers() {
+    return [
+      {
+        source: "/sw.js",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "no-cache",
+          },
+        ],
+      },
+    ];
+  },
+
+  /**
    * Blocking metadata for Googlebot as well.
    *
    * Every public page here is `force-dynamic`, so Next streams

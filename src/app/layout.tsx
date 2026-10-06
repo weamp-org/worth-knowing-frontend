@@ -5,6 +5,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Instrument_Serif, Inter } from "next/font/google";
 
 import { QueryProvider } from "@/components/query-provider";
+import { ServiceWorkerRegistration } from "@/components/service-worker-registration";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -54,6 +55,17 @@ export const metadata: Metadata = {
   title: SITE_NAME,
   description: SITE_TAGLINE,
   robots: { index: false, follow: true },
+  /**
+   * iOS home-screen behaviour.
+   *
+   * iOS ignores the manifest's `display: "standalone"` (support varies by
+   * version), so without this a home-screen launch opens in a Safari tab
+   * instead of the standalone app window. `capable: true` opts into the
+   * standalone window; `statusBarStyle: "default"` keeps the iOS status bar
+   * consistent with the page rather than floating white text over content.
+   * No `startupImage`: the app launches into a live feed, not a splash.
+   */
+  appleWebApp: { capable: true, statusBarStyle: "default" },
   openGraph: {
     type: "website",
     siteName: SITE_NAME,
@@ -134,6 +146,7 @@ export default function RootLayout({
                 </main>
                 <SiteFooter />
                 <Toaster />
+                <ServiceWorkerRegistration />
                 <Analytics />
                 <SpeedInsights />
               </AuthTokenSetter>
