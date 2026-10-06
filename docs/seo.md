@@ -297,7 +297,31 @@ own comment; the SEO-relevant parts:
   Deliberate and documented in `docs/profiles.md` — a private profile 404s by
   design, so it is *always* a legitimate soft 404. Fixing it costs a backend round
   trip on every profile view for crawl-budget points a small site does not need.
-- **No image sitemap.** There are no owned images.
+- **No image sitemap.** The only owned images are the brand icons and the
+  generated OG cards, neither of which belongs in a sitemap.
 - **AI crawlers (`GPTBot`, `PerplexityBot`, `ClaudeBot`) are not on the bot list.**
   Adding them is a referral-source decision rather than a search-engine one, and is
   not in scope for V1.
+
+## Icons
+
+`src/app/favicon.ico` (16/32/48), `src/app/icon.png` (32×32) and
+`src/app/apple-icon.png` (180×180) — the "WK" monogram on brand blue. They live
+as Next file-convention routes rather than in `public/`, so the `<link>` tags are
+emitted automatically with hashed URLs instead of being hand-maintained in
+metadata.
+
+What was deliberately **not** kept from the conventional favicon set:
+
+- `favicon-16x16.png` / `favicon-32x32.png` as separate files — the `.ico`
+  already contains both sizes, so standalone copies would be a second source of
+  the same pixels.
+- `android-chrome-192x192.png` / `android-chrome-512x512.png` — these are only
+  referenced from a web manifest, and there is no manifest. Re-add them together
+  with `manifest.ts` if installability ever becomes a product goal; until then
+  they would be unreferenced files.
+- No `mask-icon.svg` for Safari pinned tabs — same reasoning, no monochrome
+  variant of the mark exists yet.
+
+`themeColor` in the root layout mirrors `--background` per color scheme, so the
+mobile browser chrome reads as an extension of the page.

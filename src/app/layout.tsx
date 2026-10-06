@@ -1,5 +1,5 @@
 import { ClerkProvider } from "@clerk/nextjs";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Instrument_Serif, Inter } from "next/font/google";
 
 import { QueryProvider } from "@/components/query-provider";
@@ -63,6 +63,22 @@ export const metadata: Metadata = {
     title: SITE_NAME,
     description: SITE_TAGLINE,
   },
+};
+
+/**
+ * Browser chrome tint, matching the app background in each color scheme.
+ *
+ * `themeColor` with a `media` per scheme is what keeps the mobile address bar
+ * and the PWA task switcher from flashing a default grey that belongs to
+ * neither theme. The values mirror `--background` in `globals.css` — white in
+ * light mode, near-black in dark — so the chrome reads as an extension of the
+ * page rather than a frame around it.
+ */
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#171717" },
+  ],
 };
 
 export default function RootLayout({
