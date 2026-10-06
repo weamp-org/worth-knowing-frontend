@@ -5,6 +5,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Instrument_Serif, Inter } from "next/font/google";
 
 import { QueryProvider } from "@/components/query-provider";
+import { ScrollToTop } from "@/components/scroll-to-top";
 import { ServiceWorkerRegistration } from "@/components/service-worker-registration";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
@@ -146,6 +147,7 @@ export default function RootLayout({
                 </main>
                 <SiteFooter />
                 <Toaster />
+                <ScrollToTop />
                 <ServiceWorkerRegistration />
                 <Analytics />
                 <SpeedInsights />
