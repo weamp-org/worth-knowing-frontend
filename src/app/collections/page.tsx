@@ -2,7 +2,9 @@ import { auth } from "@clerk/nextjs/server";
 import { LibraryIcon } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
 import { CollectionCard } from "@/components/collection-card";
+import { PageLoading } from "@/components/page-loading";
 import { Button } from "@/components/ui/button";
 import {
   Empty,
@@ -26,12 +28,54 @@ export const metadata: Metadata = {
   description: "The resources you have gathered together.",
 };
 
+/**
+ * The per-viewer list, behind its own boundary.
+ *
+ * A `loading.tsx` here would cover the whole `/collections` segment —
+ * including `[id]`, which reaches `notFound()`, and a boundary above a route
+ * that 404s streams a 200 before the page can decide. So the boundary lives
+ * inside this page around the fetch instead, the same shape as the tag page's
+ * list. The heading above stays in the first flush.
+ */
+async function MyCollectionsList({ userId }: { userId: string }) {
+  const { items } = await getCachedMyCollections(userId);
+
+  if (items.length === 0) {
+    return (
+      <Empty className="border">
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <LibraryIcon />
+          </EmptyMedia>
+          <EmptyTitle>No collections yet</EmptyTitle>
+          <EmptyDescription>
+            A collection groups resources that belong together — the reading
+            list you keep coming back to, the four papers that explain a field.
+            You can add to it from any resource.
+          </EmptyDescription>
+        </EmptyHeader>
+        <EmptyContent>
+          <Button asChild>
+            <Link href="/collections/new">Make your first one</Link>
+          </Button>
+        </EmptyContent>
+      </Empty>
+    );
+  }
+
+  return (
+    <>
+      {items.map((collection) => (
+        <CollectionCard key={collection.id} collection={collection} />
+      ))}
+    </>
+  );
+}
+
 export default async function CollectionsPage() {
   // `protect` both gates the page and hands back the id, which the cache key
   // needs — the listing is per-account.
   const { userId } = await auth.protect();
-
-  const { items } = await getCachedMyCollections(userId);
 
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-10">
@@ -52,30 +96,9 @@ export default async function CollectionsPage() {
       </div>
 
       <div className="mt-6">
-        {items.length === 0 ? (
-          <Empty className="border">
-            <EmptyHeader>
-              <EmptyMedia variant="icon">
-                <LibraryIcon />
-              </EmptyMedia>
-              <EmptyTitle>No collections yet</EmptyTitle>
-              <EmptyDescription>
-                A collection groups resources that belong together — the reading
-                list you keep coming back to, the four papers that explain a
-                field. You can add to it from any resource.
-              </EmptyDescription>
-            </EmptyHeader>
-            <EmptyContent>
-              <Button asChild>
-                <Link href="/collections/new">Make your first one</Link>
-              </Button>
-            </EmptyContent>
-          </Empty>
-        ) : (
-          items.map((collection) => (
-            <CollectionCard key={collection.id} collection={collection} />
-          ))
-        )}
+        <Suspense fallback={<PageLoading />}>
+          <MyCollectionsList userId={userId} />
+        </Suspense>
       </div>
 
       {/*
