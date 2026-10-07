@@ -336,9 +336,11 @@ export default async function Home({
         title="Recently collected"
         description="Groups of resources somebody kept together, and why."
       >
-        {collections.map((collection) => (
-          <CollectionCard key={collection.id} collection={collection} />
-        ))}
+        {collections.length > 0
+          ? collections.map((collection) => (
+              <CollectionCard key={collection.id} collection={collection} />
+            ))
+          : null}
       </HomeSection>
     </div>
   );
