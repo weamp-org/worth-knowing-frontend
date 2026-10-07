@@ -16,7 +16,7 @@ import {
 /**
  * The site-wide error boundary.
  *
- * `reset()` stays the primary action: most render faults here are transient
+ * `retry()` stays the primary action: most render faults here are transient
  * (a failed fetch, a dropped connection) and retrying resolves them. The
  * secondary way out matters for the deterministic fault — a page that throws
  * on every render would otherwise offer nothing but a button that fails again.
@@ -27,10 +27,10 @@ import {
  */
 // biome-ignore lint/suspicious/noShadowRestrictedNames: Next.js error boundary convention
 export default function Error({
-  reset,
+  retry,
 }: {
   error: Error & { digest?: string };
-  reset: () => void;
+  retry: () => void;
 }) {
   return (
     <div className="flex flex-1 items-center justify-center px-4 py-10">
@@ -45,7 +45,7 @@ export default function Error({
           </EmptyDescription>
         </EmptyHeader>
         <EmptyContent className="flex-row justify-center">
-          <Button variant="outline" onClick={() => reset()}>
+          <Button variant="outline" onClick={() => retry()}>
             Try again
           </Button>
           <Button asChild>
