@@ -53,8 +53,10 @@ export default function PrivacyPage() {
         <li>Your account creation date</li>
       </ul>
       <p className="mt-2 leading-relaxed">
-        Your email address and internal account identifiers are not exposed
-        through Worth Knowing&apos;s public APIs.
+        Your email address is not exposed through Worth Knowing&apos;s public
+        APIs. Your internal account identifier (your Clerk user ID) may appear
+        in public API responses as the contributor or author identifier on
+        resources and comments you share non-anonymously.
       </p>
 
       <h3 className="mt-6 font-medium">Content you contribute</h3>
