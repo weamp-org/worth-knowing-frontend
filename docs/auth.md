@@ -38,9 +38,7 @@ In `src/app/layout.tsx`, `ClerkProvider` wraps the app inside `<body>`:
 
 ```tsx
 <body>
-  <ClerkProvider>
-    {children}
-  </ClerkProvider>
+  <ClerkProvider>{children}</ClerkProvider>
 </body>
 ```
 
@@ -59,7 +57,7 @@ import { Show, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
   <Show when="signed-in">
     <UserButton />
   </Show>
-</header>
+</header>;
 ```
 
 - `Show` renders children when the condition (`"signed-in"` / `"signed-out"`) is met
@@ -138,6 +136,34 @@ export function AuthTokenSetter({ children }) {
 ```
 
 This satisfies the backend's `ClerkAuthGuard` and auto-provisions the user on first request.
+
+### Server components must attach the token themselves
+
+The interceptor is installed by a client component, so it never runs on the
+server. A server-side call through the shared `api` instance gets **no**
+`Authorization` header, and a route that is not `@Public()` 401s:
+
+```ts
+// src/lib/profile-queries.ts
+const { getToken } = await auth();
+return getMyProfile((await getToken()) ?? undefined);
+```
+
+This is not merely a 401 concern. `GET /users/:username` is `@Public()`, so it
+succeeds without a token — it just cannot tell the profile's owner from a
+stranger, and a private profile then 404s for the person who owns it. Any
+server-side read that needs to know who is asking has to carry the token
+explicitly. See `docs/profiles.md`.
+
+### What Clerk owns
+
+Display name, avatar and email are **not** editable through our API. The backend's
+webhook overwrites all three on every Clerk event, so a local write would revert
+without warning. They are edited through Clerk's own profile UI, which
+`AccountDetails` opens as a **modal** via `clerk.openUserProfile()` — not
+embedded in the page, because `<UserProfile />` brings its own design system and
+fixed palette, which this app's CSS-variable theming cannot reach. See
+`docs/profiles.md`.
 
 ### Environment variable
 
