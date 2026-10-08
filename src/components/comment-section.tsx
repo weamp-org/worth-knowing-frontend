@@ -52,6 +52,7 @@ export function CommentSection({
   initialPage,
   totalCount,
   canComment,
+  showAnonymityWarning = false,
 }: {
   resourceId: string;
   /** The first page, fetched on the server so `isMine` is right on arrival. */
@@ -74,6 +75,16 @@ export function CommentSection({
    * reader to work out why.
    */
   canComment: boolean;
+  /**
+   * True on your own anonymous resource.
+   *
+   * The post hides your name and a comment would not — replying in this thread
+   * unmasks you to anyone reading. Decided server-side from the resource and
+   * the session, so the client never reasons about attribution. Warned at both
+   * composers, since a top-level comment gives you away just as surely as a
+   * reply does.
+   */
+  showAnonymityWarning?: boolean;
 }) {
   const [comments, setComments] = useState<Comment[]>(initialPage.items);
   const [nextCursor, setNextCursor] = useState(initialPage.nextCursor);
@@ -133,6 +144,7 @@ export function CommentSection({
           onPosted={add}
           placeholder="What did you make of it?"
           resourceId={resourceId}
+          showAnonymityWarning={showAnonymityWarning}
         />
       ) : (
         <p className="text-sm text-muted-foreground">
@@ -155,6 +167,7 @@ export function CommentSection({
               onDeleted={remove}
               onPosted={add}
               resourceId={resourceId}
+              showAnonymityWarning={showAnonymityWarning}
             />
           ))}
         </ol>
@@ -189,6 +202,7 @@ function CommentComposer({
   parentId,
   placeholder,
   onCancel,
+  showAnonymityWarning = false,
 }: {
   resourceId: string;
   /** Called with the created comment, which is already marked `isMine`. */
@@ -198,6 +212,8 @@ function CommentComposer({
   placeholder: string;
   /** Only a reply box has anything to cancel back to. */
   onCancel?: () => void;
+  /** Warn that this comment carries your name, on your anonymous post. */
+  showAnonymityWarning?: boolean;
 }) {
   const [body, setBody] = useState("");
   const [isPending, setIsPending] = useState(false);
@@ -242,6 +258,13 @@ function CommentComposer({
         aria-label={parentId ? "Your reply" : "Your comment"}
       />
 
+      {showAnonymityWarning ? (
+        <p className="text-sm text-muted-foreground">
+          Heads up — this post is anonymous, but comments are not. Your name
+          will show on anything you post here.
+        </p>
+      ) : null}
+
       <div className="flex items-center gap-2">
         <Button size="sm" onClick={submit} disabled={isPending || isBlank}>
           {isPending ? "Posting…" : parentId ? "Reply" : "Post comment"}
@@ -272,6 +295,7 @@ function CommentItem({
   canComment,
   onDeleted,
   onPosted,
+  showAnonymityWarning = false,
 }: {
   comment: Comment;
   resourceId: string;
@@ -279,6 +303,7 @@ function CommentItem({
   canComment: boolean;
   onDeleted: (commentId: string) => void;
   onPosted: (comment: Comment) => void;
+  showAnonymityWarning?: boolean;
 }) {
   const [isReplying, setIsReplying] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -434,6 +459,7 @@ function CommentItem({
           placeholder="Reply…"
           onPosted={onPosted}
           onCancel={() => setIsReplying(false)}
+          showAnonymityWarning={showAnonymityWarning}
         />
       ) : null}
     </article>

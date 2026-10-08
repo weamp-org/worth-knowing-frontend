@@ -15,6 +15,7 @@ import { descriptionFrom } from "@/lib/description";
 import { formatDate, getHostname } from "@/lib/format";
 import {
   getCachedResource,
+  getIsMyResourceForViewer,
   getResourceOrNotFound,
 } from "@/lib/resource-queries";
 import { ACCESS_TYPE_LABELS, RESOURCE_TYPE_LABELS } from "@/lib/resource-types";
@@ -133,6 +134,14 @@ export default async function ResourcePage({
       ])
     : [null, null];
 
+  // Ownership, separately: the resource above was read publicly, so an
+  // anonymous post arrives redacted and cannot say who wrote it — yet the
+  // comment section needs exactly that to warn a contributor replying in
+  // their own anonymous thread.
+  const isMine = userId
+    ? await getIsMyResourceForViewer(resource.id, userId)
+    : false;
+
   // Fetched for every reader, unlike the two above: the thread is public on the
   // backend. The session token is passed so each comment arrives with `isMine`
   // decided — which is the one thing here a client cannot work out for itself.
@@ -237,6 +246,10 @@ export default async function ResourcePage({
         initialPage={comments}
         resourceId={resource.id}
         totalCount={resource.commentCount}
+        // Your own anonymous post, and you are about to reply in its thread:
+        // the post hides your name and a comment would not. The section warns
+        // about that at the composer, where the decision happens.
+        showAnonymityWarning={resource.isAnonymous && isMine}
       />
     </article>
   );
