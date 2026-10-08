@@ -7,15 +7,20 @@ import { TagBadge } from "@/components/tag-badge";
 import { Input } from "@/components/ui/input";
 import type { TagSearchResult } from "@/lib/resource-types";
 import { MAX_TAG_LENGTH } from "@/lib/resource-types";
-import { listTags } from "@/lib/resources-api";
+import { listAllTags } from "@/lib/resources-api";
 import {
   isUnsupportedScript,
   isUsableTagSlug,
   slugifyTag,
 } from "@/lib/tag-slug";
 
-/** Long enough to avoid a request per keystroke, short enough to feel live. */
-const SUGGEST_DELAY_MS = 200;
+/**
+ * How many suggestions the dropdown shows.
+ *
+ * Matches the backend's old server-side cap, so switching the filtering
+ * client-side changes the latency but not the shape of the list.
+ */
+const MAX_SUGGESTIONS = 20;
 
 const OPTION_CLASS =
   "flex w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm hover:bg-accent";
@@ -30,6 +35,14 @@ function optionClass(isHighlighted: boolean): string {
  * Suggestions come from `GET /tags`, which is what the backend built this for.
  * Selecting one takes the canonical name, so an existing tag is reused instead
  * of creating a near-duplicate of it.
+ *
+ * The whole vocabulary is fetched once on mount and filtered locally, rather
+ * than queried per keystroke behind a debounce. The table is tiny (dozens of
+ * rows) and grows by at most five per contribution, so one small request
+ * replaces a network round trip after every pause — which is the delay the
+ * old shape had, and no debounce tuning could remove. The backend order is
+ * kept, so suggestions still rank most-used first. A failed fetch degrades to
+ * the create row, the same fallback a failed lookup always had.
  */
 export function TagInput({
   id,
@@ -45,7 +58,7 @@ export function TagInput({
   maxTags: number;
 }) {
   const [draft, setDraft] = useState("");
-  const [matches, setMatches] = useState<TagSearchResult[]>([]);
+  const [vocabulary, setVocabulary] = useState<TagSearchResult[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [highlighted, setHighlighted] = useState(0);
   const [highlightedFor, setHighlightedFor] = useState("");
@@ -53,9 +66,40 @@ export function TagInput({
   const isFull = value.length >= maxTags;
   const trimmed = draft.trim();
 
-  const selectedSlugs = new Set(value.map(slugifyTag));
-  // Suggestions the contributor has already added are noise.
-  const suggestions = matches.filter((m) => !selectedSlugs.has(m.slug));
+  // One fetch for the component's lifetime. The share page mounts this fresh
+  // on every visit, so there is no staleness worth refetching over — and a
+  // tag coined elsewhere mid-form is still creatable via the create row.
+  useEffect(() => {
+    let cancelled = false;
+
+    listAllTags()
+      .then((rows) => {
+        if (!cancelled) setVocabulary(rows);
+      })
+      .catch(() => {
+        if (!cancelled) setVocabulary([]);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Filtered during render, not fetched: the vocabulary is already here, so
+  // suggestions track the keystroke with no debounce and no round trip. The
+  // match covers slugs too, mirroring the backend's old substring search — a
+  // contributor who has seen `machine-learning` in a URL types that.
+  const needle = slugifyTag(trimmed);
+  const suggestions =
+    trimmed.length === 0 || isFull
+      ? []
+      : vocabulary
+          .filter(
+            (tag) =>
+              tag.slug.includes(needle) &&
+              !value.some((selected) => slugifyTag(selected) === tag.slug),
+          )
+          .slice(0, MAX_SUGGESTIONS);
 
   /**
    * Whether the draft is something new rather than one of the suggestions.
@@ -70,35 +114,6 @@ export function TagInput({
     isNewTag && !previewIsUnusable && isUsableTagSlug(previewSlug);
 
   const rowCount = suggestions.length + (showCreateRow ? 1 : 0);
-
-  useEffect(() => {
-    if (!trimmed || isFull) {
-      setMatches([]);
-      return;
-    }
-
-    let cancelled = false;
-
-    const timer = setTimeout(() => {
-      listTags(trimmed)
-        .then((rows) => {
-          if (!cancelled) {
-            setMatches(rows);
-            setIsOpen(true);
-          }
-        })
-        // A failed suggestion lookup is not worth surfacing — the contributor
-        // can still type a new tag, which is the fallback this input always had.
-        .catch(() => {
-          if (!cancelled) setMatches([]);
-        });
-    }, SUGGEST_DELAY_MS);
-
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-    };
-  }, [trimmed, isFull]);
 
   // Resetting the highlight when the query changes, done during render rather
   // than in an effect: React re-renders immediately without committing, so
@@ -119,7 +134,6 @@ export function TagInput({
 
     onChange([...value, tag]);
     setDraft("");
-    setMatches([]);
     setIsOpen(false);
   }
 
@@ -207,7 +221,14 @@ export function TagInput({
             isOpen && rowCount > 0 ? `${id}-option-${highlighted}` : undefined
           }
           value={draft}
-          onChange={(event) => setDraft(event.target.value)}
+          onChange={(event) => {
+            setDraft(event.target.value);
+            // The old shape opened the dropdown when results arrived over the
+            // network; with local filtering there is no arrival, so typing
+            // opens it directly. An empty draft still shows nothing — see the
+            // `trimmed.length === 0` guard on the suggestions.
+            setIsOpen(true);
+          }}
           onFocus={() => trimmed && setIsOpen(true)}
           onBlur={() => setIsOpen(false)}
           onKeyDown={onKeyDown}
