@@ -1,5 +1,5 @@
 import Link from "next/link";
-
+import { OutboundLink } from "@/components/outbound-link";
 import { TagBadge } from "@/components/tag-badge";
 import { Badge } from "@/components/ui/badge";
 import { ContributorByline } from "@/lib/contributor";
@@ -68,14 +68,9 @@ export function ResourceCard({
         </Link>
       </h2>
 
-      <a
-        href={resource.url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="w-fit text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground"
-      >
+      <OutboundLink href={resource.url}>
         {getHostname(resource.url)}
-      </a>
+      </OutboundLink>
 
       {/* `mt-auto` pins the footer to the bottom so the cards in a grid align with
           each other regardless of how long each `why` runs. */}
