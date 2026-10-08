@@ -183,15 +183,14 @@ export interface ResourceFacets {
 }
 
 /**
- * The `POST /resources` body.
- *
- * `accessType` is absent on purpose: the form does not ask for it and the
- * backend defaults it to `UNKNOWN`.
+ * The `POST /resources` body. Mirrors what the form sends, including
+ * `accessType` — the backend would default an absent one to `UNKNOWN`.
  */
 export interface ResourceInput {
   title: string;
   url: string;
   type: ResourceType;
+  accessType: AccessType;
   why: string;
   tags: string[];
   /** Overrides the contributor's standing preference for this resource. */

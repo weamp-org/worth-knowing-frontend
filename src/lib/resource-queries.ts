@@ -8,6 +8,7 @@ import type { Resource } from "@/lib/resource-types";
 import {
   getRandomResource,
   getResource,
+  isMyResource,
   listResourceReports,
 } from "@/lib/resources-api";
 
@@ -69,6 +70,22 @@ async function orNotFound(load: () => Promise<Resource>): Promise<Resource> {
 export function getResourceOrNotFound(id: string): Promise<Resource> {
   return orNotFound(() => getCachedResource(id));
 }
+
+/**
+ * Whether the signed-in caller contributed this resource.
+ *
+ * The page itself reads the resource publicly (redacted), so an anonymous
+ * post's own response can never answer this — yet the comment section needs to
+ * know whether the reader is the contributor they are warning. Same split as
+ * `getSavedStateForViewer`: the per-viewer bit travels separately.
+ */
+export const getIsMyResourceForViewer = cache(
+  async (resourceId: string, _viewerId: string): Promise<boolean> => {
+    const { getToken } = await auth();
+
+    return isMyResource(resourceId, (await getToken()) ?? undefined);
+  },
+);
 
 /** Authenticated read. Un-redacted for the owner, so usable by the edit page. */
 export function getResourceForViewerOrNotFound(id: string): Promise<Resource> {

@@ -1,5 +1,5 @@
 import Link from "next/link";
-
+import { OutboundLink } from "@/components/outbound-link";
 import { TagBadge } from "@/components/tag-badge";
 import { Badge } from "@/components/ui/badge";
 import { ContributorByline } from "@/lib/contributor";
@@ -16,10 +16,17 @@ import {
  * Renders on the server and in the browser, so every value it shows has to be
  * deterministic — which is why the date goes through `formatDate`.
  *
+ * The `why` is clamped to two lines in both variants. That is the whole
+ * newline story: HTML collapses newlines to spaces, so a multi-paragraph `why`
+ * can never leak a stray line break into the excerpt — it reads as one
+ * sentence, cut with an ellipsis. The full text, newlines intact, lives on the
+ * resource page, which renders it with `whitespace-pre-wrap`. Slicing the raw
+ * string on `\n` instead would mistake text lines for visual ones (wrapping
+ * varies by width) and turn a `why` that opens with a short line into a stub.
+ *
  * `dense` is the rail variant, used by the home page's most-saved section: the
- * same content in a narrower column, with the `why` given two lines instead of
- * three. Three lines is right for a full-width feed row and wrong for a two-up
- * grid, where it turns every card into a truncated block of equal height.
+ * same content in a narrower column. The access badge is the thing that changes
+ * between the variants, not the excerpt length.
  */
 export function ResourceCard({
   resource,
@@ -68,26 +75,13 @@ export function ResourceCard({
         </Link>
       </h2>
 
-      <a
-        href={resource.url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="w-fit text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground"
-      >
+      <OutboundLink href={resource.url}>
         {getHostname(resource.url)}
-      </a>
+      </OutboundLink>
 
       {/* `mt-auto` pins the footer to the bottom so the cards in a grid align with
           each other regardless of how long each `why` runs. */}
-      <p
-        className={
-          dense
-            ? "line-clamp-2 text-sm leading-relaxed"
-            : "line-clamp-3 text-sm leading-relaxed"
-        }
-      >
-        {resource.why}
-      </p>
+      <p className="line-clamp-2 text-sm leading-relaxed">{resource.why}</p>
 
       <div className="mt-auto flex flex-wrap items-center gap-2 pt-1 text-xs text-muted-foreground">
         <ContributorByline resource={resource} />

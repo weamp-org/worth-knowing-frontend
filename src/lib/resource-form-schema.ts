@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import {
+  ACCESS_TYPES,
   MAX_TAG_LENGTH,
   MAX_TAGS,
   MAX_TITLE_LENGTH,
@@ -11,9 +12,6 @@ import {
 
 /**
  * Mirrors the backend's `CreateResourceDto`.
- *
- * `accessType` is deliberately absent: the form does not ask for it and the
- * backend defaults it to `UNKNOWN`.
  */
 
 /**
@@ -65,6 +63,14 @@ export const resourceFormSchema = z.object({
     }),
   type: z.enum(RESOURCE_TYPES, {
     errorMap: () => ({ message: "Pick what kind of resource this is." }),
+  }),
+  /**
+   * Whether it costs anything. Defaults to "Not sure" on a new share — the backend
+   * would default an absent field to `UNKNOWN` anyway, but the form always
+   * sends a value so what is stored is what the contributor saw selected.
+   */
+  accessType: z.enum(ACCESS_TYPES, {
+    errorMap: () => ({ message: "Pick whether it is free or paid." }),
   }),
   why: z
     .string()

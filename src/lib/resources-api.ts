@@ -249,10 +249,17 @@ export async function listAllTags(): Promise<TagSearchResult[]> {
  * A separate call because a resource shared anonymously is redacted, so its
  * own response cannot say who wrote it — yet the client still needs to know
  * whether to offer an edit.
+ *
+ * A token is required from a Server Component; the browser gets it from the
+ * interceptor.
  */
-export async function isMyResource(id: string): Promise<boolean> {
+export async function isMyResource(
+  id: string,
+  token?: string,
+): Promise<boolean> {
   const response = await api.get<{ isMine: boolean }>(
     `/resources/${encodeURIComponent(id)}/mine`,
+    token ? { headers: { Authorization: `Bearer ${token}` } } : undefined,
   );
 
   return response.data.isMine;

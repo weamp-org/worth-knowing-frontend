@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { AnonymitySetting } from "@/components/anonymity-setting";
+import { PushSetting } from "@/components/push-setting";
 import { ThemeSetting } from "@/components/theme-setting";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -33,7 +34,7 @@ export default async function SettingsPage() {
         Settings
       </h1>
       <p className="mt-3 text-muted-foreground">
-        How you appear on the things you share.
+        How you appear on the things you share, and how you hear back.
       </p>
 
       <div className="mt-8 flex flex-col gap-8">
@@ -60,6 +61,10 @@ export default async function SettingsPage() {
         ) : null}
 
         <AnonymitySetting initialValue={anonymousByDefault} />
+
+        <Separator />
+
+        <PushSetting />
 
         <Separator />
 
