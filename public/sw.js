@@ -1,7 +1,7 @@
 /**
- * Installability-only service worker.
+ * Service worker: installation plus push delivery, and nothing else.
  *
- * ## Why this file exists with a handler that does nothing
+ * ## Why the `fetch` handler does nothing
  *
  * Chromium only offers installation when a service worker with a `fetch`
  * handler controls the start URL — a manifest alone is not enough. This handler
@@ -18,10 +18,59 @@
  * offline support is designed, it lands in this file without changing the
  * registration or the manifest.
  *
+ * ## Push
+ *
+ * The `push` handler renders what the backend sent (`title`, `body`, `url` —
+ * composed in `PushService`, resolved against this origin). The `url` is a
+ * path, so the same payload is correct on production and on a preview
+ * deployment. Tapping focuses the open tab on that page when there is one and
+ * opens it when there is not — a notification that strands a second copy of
+ * the app beside the open one is a bug, not a delivery.
+ *
  * Served with `Cache-Control: no-cache` (see `headers()` in `next.config.ts`)
  * so updates to this file reach installed apps instead of being served stale
  * from the HTTP cache.
  */
 self.addEventListener("fetch", (event) => {
   event.respondWith(fetch(event.request));
+});
+
+self.addEventListener("push", (event) => {
+  if (!event.data) return;
+
+  const data = event.data.json();
+
+  event.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: data.icon || "/icon-192x192.png",
+      badge: data.badge || "/icon-192x192.png",
+      data: { url: data.url || "/" },
+    }),
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+
+  const url = event.notification.data?.url || "/";
+
+  event.waitUntil(
+    (async () => {
+      const windows = await self.clients.matchAll({ type: "window" });
+      const target = new URL(url, self.location.origin).href;
+
+      for (const client of windows) {
+        // Same page open: focus it. App open elsewhere: steer that tab to the
+        // notification instead of stranding a second copy beside it.
+        if (client.url === target) return client.focus();
+        if (new URL(client.url).origin === self.location.origin) {
+          await client.navigate(target);
+          return client.focus();
+        }
+      }
+
+      return self.clients.openWindow(target);
+    })(),
+  );
 });

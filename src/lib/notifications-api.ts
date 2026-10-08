@@ -62,3 +62,37 @@ export async function markAllNotificationsRead(): Promise<{ updated: number }> {
 
   return response.data;
 }
+
+/**
+ * The VAPID public key this browser subscribes with, or null when push is
+ * disabled server-side.
+ *
+ * Served rather than baked into env so there is exactly one place the keys
+ * live. Public by design — useless without the private half.
+ */
+export async function getPushPublicKey(): Promise<string | null> {
+  const response = await api.get<{ publicKey: string | null }>(
+    "/notifications/push-public-key",
+  );
+
+  return response.data.publicKey;
+}
+
+export interface PushSubscriptionPayload {
+  endpoint: string;
+  keys: { p256dh: string; auth: string };
+}
+
+/** Records this browser for push delivery. Upserted on the endpoint. */
+export async function subscribePush(
+  subscription: PushSubscriptionPayload,
+): Promise<void> {
+  await api.post("/notifications/push-subscriptions", subscription);
+}
+
+/** Forgets this browser. Idempotent. */
+export async function unsubscribePush(endpoint: string): Promise<void> {
+  await api.delete("/notifications/push-subscriptions", {
+    data: { endpoint },
+  });
+}
