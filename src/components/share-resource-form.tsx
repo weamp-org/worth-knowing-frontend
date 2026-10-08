@@ -39,6 +39,8 @@ import {
   resourceFormSchema,
 } from "@/lib/resource-form-schema";
 import {
+  ACCESS_TYPE_LABELS,
+  ACCESS_TYPES,
   MAX_TAGS,
   MAX_TITLE_LENGTH,
   MAX_URL_LENGTH,
@@ -88,6 +90,7 @@ export function ShareResourceForm({
           title: resource.title,
           url: resource.url,
           type: resource.type,
+          accessType: resource.accessType,
           why: resource.why,
           // Slugs are the identity and `name` is the display form as the
           // contributor typed it, so the name is what an edit form shows.
@@ -101,6 +104,7 @@ export function ShareResourceForm({
           title: "",
           url: "",
           type: "OTHER",
+          accessType: "UNKNOWN",
           why: "",
           tags: [],
           isAnonymous: anonymousByDefault ?? false,
@@ -216,7 +220,7 @@ export function ShareResourceForm({
                   data-invalid={fieldState.invalid}
                 >
                   <FieldLabel htmlFor={`${FORM_ID}-type`}>
-                    What kind of thing is it?
+                    What type of resource is it?
                   </FieldLabel>
                   <Select
                     name={field.name}
@@ -234,6 +238,44 @@ export function ShareResourceForm({
                       {RESOURCE_TYPES.map((type) => (
                         <SelectItem key={type} value={type}>
                           {RESOURCE_TYPE_LABELS[type]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {fieldState.invalid && (
+                    <FieldError errors={[fieldState.error]} />
+                  )}
+                </Field>
+              )}
+            />
+
+            <Controller
+              name="accessType"
+              control={form.control}
+              render={({ field, fieldState }) => (
+                <Field
+                  orientation="responsive"
+                  data-invalid={fieldState.invalid}
+                >
+                  <FieldLabel htmlFor={`${FORM_ID}-accessType`}>
+                    Free or paid?
+                  </FieldLabel>
+                  <Select
+                    name={field.name}
+                    value={field.value}
+                    onValueChange={field.onChange}
+                  >
+                    <SelectTrigger
+                      id={`${FORM_ID}-accessType`}
+                      aria-invalid={fieldState.invalid}
+                      className="w-full"
+                    >
+                      <SelectValue placeholder="Pick one" />
+                    </SelectTrigger>
+                    <SelectContent position="item-aligned">
+                      {ACCESS_TYPES.map((accessType) => (
+                        <SelectItem key={accessType} value={accessType}>
+                          {ACCESS_TYPE_LABELS[accessType]}
                         </SelectItem>
                       ))}
                     </SelectContent>
