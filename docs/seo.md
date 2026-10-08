@@ -175,8 +175,14 @@ already stripped. There is deliberately no code path that prints a name — stro
 than checking a flag, and why the three byline states this app distinguishes so
 carefully cannot be collapsed by an image renderer.
 
-Fonts are not fetched: `next/og` resolves by name and cannot read the app's CSS, and
-a per-request font fetch is latency for a decorative gain on an image.
+Fonts are bundled, not fetched per request: `src/app/_og-fonts/` carries the
+`latin` `ttf` subsets of the app's own faces (`Instrument Serif` for headlines,
+`Inter` for everything else — the same faces `layout.tsx` loads), and
+`src/lib/og.ts` reads them once and reuses them. `next/og` cannot read the app's
+CSS, so without this the cards would fall back to its default sans and look
+like a template rather than the app. The blue rail, mark and footer bar use the
+brand blue sampled from the app icon, and nothing on either card is uppercased
+by CSS — `WeAMP` is set in its natural case.
 
 ## Structured data
 

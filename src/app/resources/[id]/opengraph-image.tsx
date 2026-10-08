@@ -1,8 +1,17 @@
 import { ImageResponse } from "next/og";
 
 import { descriptionFrom } from "@/lib/description";
+import {
+  getOgFonts,
+  OG_BACKGROUND,
+  OG_BRAND_BLUE,
+  OG_INK,
+  OG_MUTED,
+  OG_SANS,
+  OG_SERIF,
+} from "@/lib/og";
 import { getCachedResource } from "@/lib/resource-queries";
-import { SITE_NAME, SITE_TAGLINE } from "@/lib/site";
+import { SITE_NAME, SITE_TAGLINE, siteUrl } from "@/lib/site";
 
 /**
  * The social card for one resource: **the contributor's reason, not the wordmark.**
@@ -37,12 +46,21 @@ import { SITE_NAME, SITE_TAGLINE } from "@/lib/site";
  * card: a 500 on an OG image is worse than a plain one. So the catch falls back to
  * the site identity rather than throwing.
  *
- * ## Fonts
+ * ## The chrome matches the app, not a template
  *
- * `next/og` resolves fonts by name and cannot read the app's CSS, so the default
- * sans stands in for the site's `Instrument_Serif` heading face. Fetching a font
- * per request would add latency to every card render for a decorative gain — an
- * image's typography is not selectable, copyable, or read by a crawler.
+ * The `why` is set in the app's own heading face (`Instrument Serif`), the rest
+ * in its body face (`Inter`), both bundled in `src/app/_og-fonts/` — see
+ * `src/lib/og.ts`. The blue rail, mark and footer bar use the brand blue sampled
+ * from the app icon. Nothing here is uppercased by CSS: earlier styling put the
+ * wordmark through `text-transform: uppercase`, which is what rendered it as
+ * "WORTH KNOWING" instead of the header's natural case.
+ *
+ * ## The footer bar is the call to action
+ *
+ * An OG card cannot carry a working link, so the footer names the host the
+ * reasoning lives at. The host is derived from `NEXT_PUBLIC_SITE_URL` — the same
+ * single source as every other absolute URL — and falls back to the site name
+ * when no origin is configured.
  */
 
 export const alt = "Why somebody thought this resource was worth knowing";
@@ -50,6 +68,14 @@ export const alt = "Why somebody thought this resource was worth knowing";
 export const size = { width: 1200, height: 630 };
 
 export const contentType = "image/png";
+
+/**
+ * Characters of `why` the card carries. Larger than the search-snippet budget
+ * because the card has the height for it; still bounded, because a 5,000
+ * character `why` at headline size would overflow the 630px frame — the
+ * container's `overflow: hidden` is only the backstop, not the plan.
+ */
+const CARD_WHY_BUDGET = 200;
 
 export default async function Image({
   params,
@@ -66,12 +92,15 @@ export default async function Image({
 
     title = resource.title;
     // The same helper the page metadata uses, so the card and the search snippet
-    // cannot disagree about what this contribution is about.
-    why = descriptionFrom(resource.why, 300) ?? "";
+    // cannot disagree about what this contribution is about — with a larger
+    // budget, because the card has room the snippet does not.
+    why = descriptionFrom(resource.why, CARD_WHY_BUDGET) ?? "";
   } catch {
     // Left as the site identity rather than thrown: a card for a deleted resource
     // should still render.
   }
+
+  const host = siteUrl()?.host ?? null;
 
   return new ImageResponse(
     <div
@@ -79,41 +108,118 @@ export default async function Image({
         width: "100%",
         height: "100%",
         display: "flex",
-        flexDirection: "column",
-        justifyContent: "space-between",
-        background: "#fafafa",
-        color: "#0a0a0a",
-        padding: 72,
+        flexDirection: "row",
+        background: OG_BACKGROUND,
       }}
     >
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        <div
-          style={{
-            fontSize: 26,
-            letterSpacing: 3,
-            textTransform: "uppercase",
-            color: "#737373",
-          }}
-        >
-          Worth Knowing
-        </div>
+      {/* Brand rail, echoing the app's blue. */}
+      <div style={{ width: 20, background: OG_BRAND_BLUE }} />
 
-        <div style={{ fontSize: 40, lineHeight: 1.2 }}>{title}</div>
-      </div>
-
-      {/* The reason, large — the thing being shared, and the only part of this
-            card a recipient has not already seen. */}
       <div
         style={{
+          flex: 1,
           display: "flex",
-          fontSize: 46,
-          lineHeight: 1.3,
-          color: "#171717",
+          flexDirection: "column",
         }}
       >
-        {why}
+        <div
+          style={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            padding: "40px 72px",
+            gap: 20,
+            overflow: "hidden",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 14,
+            }}
+          >
+            <div
+              style={{
+                width: 48,
+                height: 48,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                background: OG_BRAND_BLUE,
+                color: "#ffffff",
+                fontFamily: OG_SERIF,
+                fontSize: 28,
+              }}
+            >
+              WK
+            </div>
+
+            <div
+              style={{
+                fontFamily: OG_SANS,
+                fontWeight: 600,
+                fontSize: 28,
+                color: OG_MUTED,
+              }}
+            >
+              Worth Knowing
+            </div>
+          </div>
+
+          {/* The resource title, small — context the recipient already has. */}
+          <div
+            style={{
+              fontFamily: OG_SANS,
+              fontWeight: 600,
+              fontSize: 30,
+              lineHeight: 1.3,
+              color: OG_MUTED,
+              maxHeight: 78,
+              overflow: "hidden",
+            }}
+          >
+            {title}
+          </div>
+
+          {/* The reason, large — the thing being shared, and the only part of this
+            card a recipient has not already seen. */}
+          <div
+            style={{
+              display: "flex",
+              fontFamily: OG_SERIF,
+              fontSize: 48,
+              lineHeight: 1.25,
+              color: OG_INK,
+              maxHeight: 240,
+              overflow: "hidden",
+            }}
+          >
+            {why}
+          </div>
+        </div>
+
+        {/* The call to action: where the reasoning lives, in the brand blue. */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            background: OG_BRAND_BLUE,
+            color: "#ffffff",
+            fontFamily: OG_SANS,
+            fontWeight: 600,
+            fontSize: 28,
+            padding: "22px 72px",
+          }}
+        >
+          {host ? `See why at ${host}` : SITE_NAME}
+        </div>
       </div>
     </div>,
-    size,
+    {
+      ...size,
+      fonts: await getOgFonts(),
+    },
   );
 }
