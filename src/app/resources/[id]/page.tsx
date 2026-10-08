@@ -2,6 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import type { Metadata } from "next";
 import { CollectionPicker } from "@/components/collection-picker";
 import { CommentSection } from "@/components/comment-section";
+import { OutboundLink } from "@/components/outbound-link";
 import { ResourceActions } from "@/components/resource-actions";
 import { SaveButton } from "@/components/save-button";
 import { TagBadge } from "@/components/tag-badge";
@@ -161,12 +162,9 @@ export default async function ResourcePage({
             Open resource
           </a>
         </Button>
-        <a
-          href={resource.url}
-          className="text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground"
-        >
+        <OutboundLink href={resource.url}>
           {getHostname(resource.url)}
-        </a>
+        </OutboundLink>
         <ResourceActions
           resourceId={resource.id}
           title={resource.title}
