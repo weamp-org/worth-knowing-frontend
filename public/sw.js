@@ -30,7 +30,24 @@
  * Served with `Cache-Control: no-cache` (see `headers()` in `next.config.ts`)
  * so updates to this file reach installed apps instead of being served stale
  * from the HTTP cache.
+ *
+ * ## Updates activate immediately
+ *
+ * `skipWaiting` plus `clients.claim()` take each new worker live the moment it
+ * is found. Without them an update sits in "waiting" while any tab is open and
+ * the previous worker stays in control — which for a `push` handler means
+ * deliveries land on a worker with no `push` listener and are silently
+ * dropped. A same-day worker update that never takes over is worse than no
+ * update mechanism at all, because everything up to the browser looks healthy.
  */
+self.addEventListener("install", () => {
+  self.skipWaiting();
+});
+
+self.addEventListener("activate", (event) => {
+  event.waitUntil(self.clients.claim());
+});
+
 self.addEventListener("fetch", (event) => {
   event.respondWith(fetch(event.request));
 });
