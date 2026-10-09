@@ -1,6 +1,8 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import {
+  BellIcon,
   BookmarkIcon,
   LibraryIcon,
   MenuIcon,
@@ -18,6 +20,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  UNREAD_COUNT_QUERY_KEY,
+  unreadNotificationCount,
+} from "@/lib/notifications-api";
 import { useMyProfile } from "@/lib/use-my-profile";
 
 /**
@@ -57,6 +63,25 @@ export function HeaderMenu() {
   const isAdmin = profile?.role === "ADMIN";
 
   /*
+   * The bell used to live beside this menu as its own header button, and the
+   * header ran out of room on narrow screens. The count moved in here instead:
+   * the trigger carries the dot so an unread badge is never a notification
+   * about a notification, and the item below carries the number.
+   *
+   * No tight poll: every hit keeps the database awake (Neon scale-to-zero
+   * never kicks in with a tab open). Freshness comes from refetch on window
+   * focus plus invalidation after read actions; the interval is only a
+   * backstop for a tab left open in the foreground.
+   */
+  const { data: unread = 0 } = useQuery({
+    queryKey: UNREAD_COUNT_QUERY_KEY,
+    queryFn: unreadNotificationCount,
+    refetchInterval: 5 * 60 * 1_000,
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
+  });
+
+  /*
    * `/u/<handle>`, and only when the server would resolve one.
    *
    * A profile is not always a page. `resolveProfilePath` returns null for a private
@@ -81,14 +106,40 @@ export function HeaderMenu() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm" className="px-2">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="relative px-2"
+          aria-label={
+            unread > 0 ? `Menu, ${unread} unread notifications` : "Menu"
+          }
+        >
           <MenuIcon aria-hidden="true" />
-          {/* The glyph carries no accessible name on its own. */}
-          <span className="sr-only">Menu</span>
+          {unread > 0 ? (
+            <span
+              aria-hidden="true"
+              className="absolute top-1 right-1 size-2 rounded-full bg-primary"
+            />
+          ) : null}
         </Button>
       </DropdownMenuTrigger>
 
       <DropdownMenuContent align="end">
+        <DropdownMenuItem asChild>
+          <Link href="/notifications">
+            <BellIcon aria-hidden="true" />
+            Notifications
+            {unread > 0 ? (
+              <span
+                aria-hidden="true"
+                className="ml-auto flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground"
+              >
+                {unread > 99 ? "99+" : unread}
+              </span>
+            ) : null}
+          </Link>
+        </DropdownMenuItem>
+
         <DropdownMenuItem asChild>
           <Link href="/saved">
             <BookmarkIcon aria-hidden="true" />

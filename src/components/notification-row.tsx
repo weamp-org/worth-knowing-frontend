@@ -2,10 +2,11 @@
 
 import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
-
-import { UNREAD_COUNT_QUERY_KEY } from "@/components/notification-bell";
 import type { Notification } from "@/lib/notification-types";
-import { markNotificationRead } from "@/lib/notifications-api";
+import {
+  markNotificationRead,
+  UNREAD_COUNT_QUERY_KEY,
+} from "@/lib/notifications-api";
 import { cn } from "@/lib/utils";
 
 /**
@@ -13,8 +14,8 @@ import { cn } from "@/lib/utils";
  *
  * A client component for exactly one reason: visiting a notification marks it
  * read. The mark fires without awaiting — blocking navigation on a bookkeeping
- * write would punish the reader for the inbox's sake — and settles the bell
- * through the shared count query. The row's own read styling settles on the
+ * write would punish the reader for the inbox's sake — and settles the menu
+ * badge through the shared count query. The row's own read styling settles on the
  * next render, which is honest: the write may still be in flight.
  *
  * The actor's name is plain text, not a profile link: the whole row already

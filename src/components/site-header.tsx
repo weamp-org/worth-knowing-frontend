@@ -5,7 +5,6 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { HeaderMenu } from "@/components/header-menu";
-import { NotificationBell } from "@/components/notification-bell";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 
@@ -72,13 +71,6 @@ export function SiteHeader() {
           </Show>
 
           <Show when="signed-in">
-            {/*
-              The bell first: it is the only one of these that carries state,
-              and an unread badge hidden behind a menu would be a notification
-              about a notification.
-            */}
-            <NotificationBell />
-
             {/*
               The filled button in the header, and now the only word in it. The
               rest of the signed-in destinations moved behind `HeaderMenu`,

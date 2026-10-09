@@ -16,6 +16,12 @@ import type {
  * `notifications-queries.ts`.
  */
 
+/**
+ * The query the unread count settles through — the header menu, inbox rows
+ * and buttons included.
+ */
+export const UNREAD_COUNT_QUERY_KEY = ["notifications", "unread-count"];
+
 /** Your notifications, newest first. Cursor-paginated like every other list. */
 export async function listNotifications(
   options: { token?: string; cursor?: string } = {},
@@ -33,8 +39,8 @@ export async function listNotifications(
 /**
  * How many of your notifications are unread.
  *
- * Separate from the list because the header bell polls this and nothing else —
- * refetching a page of rows every 30 seconds to read a number off it would be
+ * Separate from the list because the header menu polls this and nothing else —
+ * refetching a page of rows every few minutes to read a number off it would be
  * the list endpoint doing a counter's job.
  */
 export async function unreadNotificationCount(): Promise<number> {

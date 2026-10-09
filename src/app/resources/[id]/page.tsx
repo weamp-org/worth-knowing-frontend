@@ -1,5 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import type { Metadata } from "next";
+import { BackButton } from "@/components/back-button";
 import { CollectionPicker } from "@/components/collection-picker";
 import { CommentSection } from "@/components/comment-section";
 import { OutboundLink } from "@/components/outbound-link";
@@ -149,6 +150,9 @@ export default async function ResourcePage({
 
   return (
     <article className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-10">
+      <div>
+        <BackButton />
+      </div>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
         <Badge variant="secondary">{RESOURCE_TYPE_LABELS[resource.type]}</Badge>
         {resource.accessType !== "UNKNOWN" ? (
