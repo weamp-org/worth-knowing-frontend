@@ -24,9 +24,13 @@ export function NotificationBell() {
   const { data: unread = 0 } = useQuery({
     queryKey: UNREAD_COUNT_QUERY_KEY,
     queryFn: unreadNotificationCount,
-    // The agreed delivery mechanism: cheap, matches the Query setup, and no
-    // connection to manage. Thirty seconds is fresh enough for a bell.
-    refetchInterval: 30_000,
+    // No tight poll: every hit keeps the database awake (Neon scale-to-zero
+    // never kicks in with a tab open). Freshness comes from refetch on window
+    // focus plus invalidation after read actions; the interval below is only
+    // a backstop for a tab left open in the foreground.
+    refetchInterval: 5 * 60 * 1_000,
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
   });
 
   return (
