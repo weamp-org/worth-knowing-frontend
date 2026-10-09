@@ -4,14 +4,16 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-import { UNREAD_COUNT_QUERY_KEY } from "@/components/notification-bell";
 import { Button } from "@/components/ui/button";
-import { markAllNotificationsRead } from "@/lib/notifications-api";
+import {
+  markAllNotificationsRead,
+  UNREAD_COUNT_QUERY_KEY,
+} from "@/lib/notifications-api";
 
 /**
  * Clears the inbox.
  *
- * Settles both halves: the bell through the shared count query, the list
+ * Settles both halves: the menu badge through the shared count query, the list
  * itself through a router refresh, which re-renders the server rows as read.
  * Disabled when there is nothing to clear — a button that fires a no-op is
  * noise, and the unread count arriving here is what decides.
