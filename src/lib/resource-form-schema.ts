@@ -62,7 +62,7 @@ export const resourceFormSchema = z.object({
       message: "Enter a full link, including https:// and a domain.",
     }),
   type: z.enum(RESOURCE_TYPES, {
-    errorMap: () => ({ message: "Pick what kind of resource this is." }),
+    error: "Pick what kind of resource this is.",
   }),
   /**
    * Whether it costs anything. Defaults to "Not sure" on a new share — the backend
@@ -70,7 +70,7 @@ export const resourceFormSchema = z.object({
    * sends a value so what is stored is what the contributor saw selected.
    */
   accessType: z.enum(ACCESS_TYPES, {
-    errorMap: () => ({ message: "Pick whether it is free or paid." }),
+    error: "Pick whether it is free or paid.",
   }),
   why: z
     .string()
